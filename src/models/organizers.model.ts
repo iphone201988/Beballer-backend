@@ -4,9 +4,13 @@ import { PlayerModel } from "../type/Database/type";
 
 const organizerSchema = new mongoose.Schema<PlayerModel>(
   {
+    id: {
+      type: String,
+      unique: true,
+    },
     username: {
       type: String,
-      required: true,
+      unique: true, 
     },
     email: {
       type: String,
@@ -15,10 +19,14 @@ const organizerSchema = new mongoose.Schema<PlayerModel>(
       type: Boolean,
       default: false,
     },
-    subscriptions: [
+   subscriptions: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "player",
+         _id: false,
+        collectionName:{
+          type: String,
+          enum: [userType.ORGANIZER, userType.PLAYER],
+        },
+        id:String,
       },
     ],
     reports: [{ type: String }],

@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { userType } from "../utils/enum";
 import Organizer from "../models/organizers.model";
 import {
@@ -9,7 +9,8 @@ import {
   TryCatch,
 } from "../utils/helper";
 import Players from "../models/players.model";
-import {UserLoginType} from "../type/Api/userApi.type";
+import { UserLoginType } from "../type/Api/userApi.type";
+import ErrorHandler from "../utils/ErrorHandler";
 
 const userLogin = TryCatch(async (req: Request<{}, {}, UserLoginType>, res: Response) => {
   const { id, deviceToken, deviceType, latitude, longitude, type } =
@@ -17,20 +18,23 @@ const userLogin = TryCatch(async (req: Request<{}, {}, UserLoginType>, res: Resp
   let user;
 
   if (type === userType.PLAYER) {
-    user = await Players.findOne({ id });
+    user = await Players.findOne({ id }); ``
     if (!user) {
-      user = await Players.create({ id });
+      user = await Players.create({ id: id });
+      console.log('Player Created', user);
     }
   } else {
+    console.log('Organizer======================dfgdfgdfgfd');
     user = await Organizer.findOne({ id });
     if (!user) {
-      user = await Organizer.create({ id });
+      user = await Organizer.create({ id: id });
+      console.log('Organiser Created');
     }
   }
   let token;
   if (user) {
     const jti = generateRandomString(20);
-    token = generateJwtToken({ userId: user._id, type ,jti });
+    token = generateJwtToken({ userId: user._id, type, jti });
     user.jti = jti;
     user.deviceToken = deviceToken;
     user.deviceType = deviceType;
@@ -49,16 +53,49 @@ const userLogin = TryCatch(async (req: Request<{}, {}, UserLoginType>, res: Resp
 
 const getUserProfile = TryCatch(async (req: Request, res: Response) => {
   const { user } = req;
-  return SUCCESS(res, 200, "LoggedIn successfully", {
+  return SUCCESS(res, 200, "User fetched successfully", {
     data: {
       user: getFileteredUser(user.toObject()),
     },
   });
 });
 
+const subscribeUser = TryCatch(async (req: Request, res: Response , next:NextFunction) => {
+  const { user, userType } = req;
+  const subscribedUserId = req.query.id; // it should be _id
+  const collectionName = userType === 'player' ? 'players' : 'organizers';
+  const subscriberId = user.id;
+
+  let playerUser = await Players.findById(subscribedUserId);
+  if (playerUser) {
+    if(playerUser.subscriptions.find(sub => sub.id === subscriberId)) {
+      return next (new ErrorHandler("Already Subscribed", 400));
+    }
+    playerUser.subscriptions.push({
+      collectionName,
+      id: subscriberId
+    });
+    await playerUser.save();
+  } else {
+    const organizerUser = await Organizer.findById(subscribedUserId);
+    if(organizerUser.subscriptions.find(sub => sub.id === subscriberId)) {
+      return next (new ErrorHandler("Already Subscribed", 400));
+    }
+    if (organizerUser) {
+      organizerUser.subscriptions.push({
+        collectionName,
+        id: subscriberId
+      });
+      await organizerUser.save();
+    }
+  }
+
+  return SUCCESS(res, 200, "Subscribed successfully");
+});
 
 
 export default {
   userLogin,
   getUserProfile,
+  subscribeUser
 };

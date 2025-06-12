@@ -4,9 +4,13 @@ import { PlayerModel } from "../type/Database/type";
 
 const playerSchema = new mongoose.Schema<PlayerModel>(
   {
+    id: {
+      type: String,
+      unique: true,
+    },
     username: {
       type: String,
-      required: true,
+      unique: true,
     },
     firstName: {
       type: String,
@@ -24,8 +28,12 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     subscriptions: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "player",
+         _id: false,
+        collectionName:{
+          type: String,
+          enum: ['organizers', 'players'],
+        },
+        id:String,
       },
     ],
     sector: {
@@ -127,9 +135,14 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
       },
     ],
     followers: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "player",
+       {
+        collectionName: {
+          type: String,
+          default: "players",
+        },
+        id: {
+          type: String,
+        },
       },
     ],
     feedCountry: {
@@ -174,12 +187,20 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     birthDate: {
       type: Date,
     },
+    profilePicture: {
+      type: String,
+      default: null,
+    },
     badges: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "badges",
       },
     ],
+    isOnboardAnalyticsDone: {
+      type: Boolean,
+      default: false,
+    },
     badge: {
       type: String,
     },

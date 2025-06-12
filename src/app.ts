@@ -3,11 +3,12 @@ import "dotenv/config";
 import cors from "cors";
 import { errorMiddleware } from "./middleware/error.middleware";
 import router from "./routes/route";
+import main from "./script";
 const app = express();
 
 app.use(express.json());
 app.use(cors());
-
+// main();
 app.use("/api/v1", router);
 
 app.use("/*", (req:Request, res:Response) => {

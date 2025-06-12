@@ -16,7 +16,7 @@ export const authenticationMiddleware = TryCatch(
     const token = authHeader.split(" ")[1];
 
     const decode = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
-    console.log("====decode", decode);
+    
     if (!decode) return next(new ErrorHandler("Invalid token", 401));
 
     let user;
@@ -33,6 +33,7 @@ export const authenticationMiddleware = TryCatch(
 
     await user.save();
     req.userId = user._id.toString();
+    req.userType = decode.type;
     req.user = user;
     next();
   }

@@ -1,11 +1,14 @@
+import { Interface } from "readline";
+
 export interface PlayerModel {
+    id: string;
     _id: string;
     username: string;
     firstName?: string;
     email?: string;
     verified: boolean;
     totalProgression: number;
-    subscriptions: string[];
+    subscriptions: any;
     sector?: string;
     score: number;
     reports: string[];
@@ -52,4 +55,83 @@ export interface PlayerModel {
     deviceToken: string;
     deviceType: number;
     jti: string;
+    isOnboardAnalyticsDone: boolean;
+    profilePicture?: string;
+}
+
+export interface postModel {
+    id: string;
+    date: Date;
+    reports: string[];
+    country: string;
+    game: {
+        ref: {
+            collectionName: string;
+            id: string;
+        }
+    };
+    description: string;
+    location: {
+        type: "Point";
+        coordinates: number[];
+    };
+    likes: string[];
+    score: number;
+    isFeed: boolean;
+    comments: string[];
+    shares: any;
+    publisher: {
+        ref: {
+            collectionName: string;
+            id: string;
+        }
+    },
+    event: {
+        ref: {
+            collectionName: string;
+            id: string;
+        }
+    }
+}
+
+export interface fieldsModel  {
+    id: string,
+    _id: string,
+    accessibility: string,
+    address: {
+        type: {
+            type: string,
+            enum: ["Point"],
+        },
+        coordinates: {
+            type: [number],
+        },
+    },
+    addressString: string,
+    boardType: string,
+    city: string,
+    contributor: {
+        ref: {
+            collectionName: string,
+            id: string,
+        },
+    },
+    country: string,
+    description: string,
+    expireIn: number,
+    floorType: string,
+    geohash:string,
+    grade:number,
+    hoopsCount:number,
+    image: string,
+    isWomanFriendly:boolean,
+    ishandi:boolean,
+    isverified:boolean,
+    king: string,
+    level:string,
+    name:string,
+    netType: string,
+    price: number,
+    region:string,
+    photos:string[],
 }

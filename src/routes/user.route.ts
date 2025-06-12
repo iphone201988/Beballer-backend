@@ -3,6 +3,7 @@ import userController from "../controllers/user.controller"
 import {authenticationMiddleware} from "../middleware/auth.middleware"
 import validate from "../middleware/validate.middleware"
 import userSchema from "../schema/user.schema"
+import { commonQuerySchema } from "../schema"
 const userRouter = express.Router()
 
 userRouter.post(
@@ -15,6 +16,12 @@ userRouter.get(
   "/profile",
   authenticationMiddleware,
   userController.getUserProfile
+);
+
+userRouter.post(
+  "/subscribe",
+  authenticationMiddleware,
+  userController.subscribeUser
 );
 
 

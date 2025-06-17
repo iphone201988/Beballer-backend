@@ -1,6 +1,6 @@
 import Joi from "joi";
 import { deviceType } from "../utils/enum";
-import {stringValidation} from "./index";
+import {ObjectIdValidation, stringValidation} from "./index";
 const loginSchema = {
   body: Joi.object({
     id: stringValidation("id"),
@@ -31,8 +31,23 @@ const loginSchema = {
   }),
 };
 
+
+export const paramsSchema  = {
+  params: Joi.object({
+    id: ObjectIdValidation("id"),
+  })
+}
+export const querySchema  = {
+  query: Joi.object({
+    id: ObjectIdValidation("id",false),
+  })
+}
+
 const userSchema = {
-    loginSchema
+    loginSchema,
+    paramsSchema,
+    querySchema
+
 }
 
 export default userSchema

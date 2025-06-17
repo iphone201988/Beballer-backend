@@ -49,13 +49,3 @@ export const ObjectIdValidation = (key: string, isRequired: boolean = true) => {
   return schema;
 };
 
-export const commonParamsSchema  = {
-  params: Joi.object({
-    userId: ObjectIdValidation("UserID"),
-  })
-}
-export const commonQuerySchema  = {
-  query: Joi.object({
-    userId: ObjectIdValidation("UserID",false),
-  })
-}

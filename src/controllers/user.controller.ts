@@ -9,7 +9,7 @@ import {
   TryCatch,
 } from "../utils/helper";
 import Players from "../models/players.model";
-import { UserLoginType } from "../type/Api/userApi.type";
+import { UserLoginType, subscribeType } from "../type/Api/userApi.type";
 import ErrorHandler from "../utils/ErrorHandler";
 
 const userLogin = TryCatch(async (req: Request<{}, {}, UserLoginType>, res: Response) => {
@@ -18,13 +18,12 @@ const userLogin = TryCatch(async (req: Request<{}, {}, UserLoginType>, res: Resp
   let user;
 
   if (type === userType.PLAYER) {
-    user = await Players.findOne({ id }); ``
+    user = await Players.findOne({ id });
     if (!user) {
       user = await Players.create({ id: id });
       console.log('Player Created', user);
     }
   } else {
-    console.log('Organizer======================dfgdfgdfgfd');
     user = await Organizer.findOne({ id });
     if (!user) {
       user = await Organizer.create({ id: id });
@@ -60,7 +59,7 @@ const getUserProfile = TryCatch(async (req: Request, res: Response) => {
   });
 });
 
-const subscribeUser = TryCatch(async (req: Request, res: Response , next:NextFunction) => {
+const subscribeUser = TryCatch(async (req: Request<{}, {}, subscribeType>, res: Response, next: NextFunction) => {
   const { user, userType } = req;
   const subscribedUserId = req.query.id; // it should be _id
   const collectionName = userType === 'player' ? 'players' : 'organizers';
@@ -68,8 +67,8 @@ const subscribeUser = TryCatch(async (req: Request, res: Response , next:NextFun
 
   let playerUser = await Players.findById(subscribedUserId);
   if (playerUser) {
-    if(playerUser.subscriptions.find(sub => sub.id === subscriberId)) {
-      return next (new ErrorHandler("Already Subscribed", 400));
+    if (playerUser.subscriptions.find(sub => sub.id === subscriberId)) {
+      return next(new ErrorHandler("Already Subscribed", 400));
     }
     playerUser.subscriptions.push({
       collectionName,
@@ -78,8 +77,8 @@ const subscribeUser = TryCatch(async (req: Request, res: Response , next:NextFun
     await playerUser.save();
   } else {
     const organizerUser = await Organizer.findById(subscribedUserId);
-    if(organizerUser.subscriptions.find(sub => sub.id === subscriberId)) {
-      return next (new ErrorHandler("Already Subscribed", 400));
+    if (organizerUser.subscriptions.find(sub => sub.id === subscriberId)) {
+      return next(new ErrorHandler("Already Subscribed", 400));
     }
     if (organizerUser) {
       organizerUser.subscriptions.push({

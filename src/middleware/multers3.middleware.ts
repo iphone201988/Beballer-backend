@@ -21,7 +21,6 @@ const uploads3 = multer({
         contentType: multerS3.AUTO_CONTENT_TYPE,
         key: function (req, file, cb) {
             let folderPath;
-
             if (file.fieldname === "profilePicture") {
                 const { userType } = req;
                 if (userType === "player") {

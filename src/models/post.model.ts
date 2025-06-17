@@ -1,20 +1,17 @@
 import mongoose from "mongoose";
-import {postModel} from "../type/Database/type";
+import { postModel } from "../type/Database/type";
 
 const postSchema = new mongoose.Schema<postModel>(
     {
         id: {
             type: String,
-            unique: true,
         },
         date: {
             type: Date,
-            required: true,
         },
         reports: [],
         country: {
             type: String,
-            required: true,
         },
         game: {
             ref: {
@@ -24,8 +21,7 @@ const postSchema = new mongoose.Schema<postModel>(
                 },
                 id: {
                     type: String,
-                    required: true,
-                },  
+                },
             }
         },
         description: {
@@ -34,7 +30,6 @@ const postSchema = new mongoose.Schema<postModel>(
         },
         isFeed: {
             type: Boolean,
-            default: true,
         },
         shares: [],
         publisher: {
@@ -45,7 +40,6 @@ const postSchema = new mongoose.Schema<postModel>(
                 },
                 id: {
                     type: String,
-                    required: true,
                 },
             }
         },
@@ -57,20 +51,17 @@ const postSchema = new mongoose.Schema<postModel>(
                 },
                 id: {
                     type: String,
-                    required: true,
                 },
             }
         },
         likes: [
             {
+                _id: false,
                 collectionName: {
                     type: String,
-                    default: "players",
+                    enum: ['organizers', 'players'],
                 },
-                id: {
-                    type: String,
-                    required: true,
-                },
+                id: String,
             },
         ],
         score: {
@@ -80,6 +71,11 @@ const postSchema = new mongoose.Schema<postModel>(
     },
     { timestamps: true }
 );
-
+postSchema.index({ "publisher.ref.id": 1 });
+postSchema.index({ "publisher.ref.collectionName": 1, "publisher.ref.id": 1 });
+postSchema.index({ "game.ref.id": 1 });
+postSchema.index({ id: 1 });
+postSchema.index({ date: -1 });
+postSchema.index({ country: 1 });
 const Posts = mongoose.model<postModel>("post", postSchema);
 export default Posts;

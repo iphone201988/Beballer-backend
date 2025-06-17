@@ -1,8 +1,12 @@
 import mongoose from "mongoose";
 import { fieldsModel } from "../type/Database/type";
+import { courtAccessibility,courtBoardType,courtNetType,courtFloorType } from "../utils/enum";
+
 const fieldsSchema = new mongoose.Schema<fieldsModel>({
     accessibility: {
         type: String,
+        enum: [courtAccessibility.AVAILABLE_TO_EVERYONE, courtAccessibility.AVAILABLE_TO_LICENSEES, courtAccessibility.SPECIAL_OPENING_HOURS],
+        default: courtAccessibility.AVAILABLE_TO_EVERYONE
     },
     address: {
         type: {
@@ -18,6 +22,8 @@ const fieldsSchema = new mongoose.Schema<fieldsModel>({
     },
     boardType: {
         type: String,
+        enum: [courtBoardType.STEEL, courtBoardType.WOOD, courtBoardType.PLASTIC, courtBoardType.PLEXIGLAS ],
+        default: "",
     },
     city: {
         type: String,
@@ -34,67 +40,72 @@ const fieldsSchema = new mongoose.Schema<fieldsModel>({
             },
         }
     },
-    country:{
+    country: {
         type: String,
     },
-    description:{
+    description: {
         type: String,
     },
-    expireIn:{
-        type:Number,
-    },
-    floorType:{
-        type: String,
-    },
-    geohash:{
-        type: String,
-    },
-    grade:{
+    expireIn: {
         type: Number,
     },
-    hoopsCount:{
+    floorType: {
+        type: String,
+        enum: [courtFloorType.SYNTHETIC, courtFloorType.BITUMEN],
+    },
+    geohash: {
+        type: String,
+    },
+    grade: {
         type: Number,
     },
-    id:{
+    hoopsCount: {
+        type: Number,
+    },
+    id: {
         type: String,
         unique: true,
     },
-    image:{
+    image: {
         type: String,
     },
-    isWomanFriendly:{
+    isWomanFriendly: {
         type: Boolean,
         default: true,
     },
-    ishandi:{
+    ishandi: {
         type: Boolean,
         default: false,
     },
-    isverified:{
+    isverified: {
         type: Boolean,
         default: false,
     },
-    king:{
+    king: {
         type: String,
     },
-    level:{
+    level: {
         type: String,
     },
-    name:{
+    name: {
         type: String,
     },
-    netType:{
+    netType: {
         type: String,
+        enum: [courtNetType.STRING, courtNetType.CHAIN, courtNetType.PLASTIC , courtNetType.NO_NET],
+        default: null
     },
-    price:{
+    price: {
         type: Number,
     },
-    region:{
+    region: {
         type: String,
     },
     photos: [{ type: String }]
 
-});
+},
+    { timestamps: true }
+);
 
 const Fields = mongoose.model<fieldsModel>("field", fieldsSchema);
 export default Fields;

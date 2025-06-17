@@ -94,18 +94,13 @@ export interface postModel {
     }
 }
 
-export interface fieldsModel  {
+export interface fieldsModel {
     id: string,
     _id: string,
     accessibility: string,
-    address: {
-        type: {
-            type: string,
-            enum: ["Point"],
-        },
-        coordinates: {
-            type: [number],
-        },
+    address:{
+        type: "Point";
+        coordinates: number[];
     },
     addressString: string,
     boardType: string,
@@ -120,18 +115,36 @@ export interface fieldsModel  {
     description: string,
     expireIn: number,
     floorType: string,
-    geohash:string,
-    grade:number,
-    hoopsCount:number,
+    geohash: string,
+    grade: number,
+    hoopsCount: number,
     image: string,
-    isWomanFriendly:boolean,
-    ishandi:boolean,
-    isverified:boolean,
+    isWomanFriendly: boolean,
+    ishandi: boolean,
+    isverified: boolean,
     king: string,
-    level:string,
-    name:string,
+    level: string,
+    name: string,
     netType: string,
     price: number,
-    region:string,
-    photos:string[],
+    region: string,
+    photos: string[],
+}
+
+export interface commentModel {
+    id: string;
+    _id: string;
+    likes: string[];
+    publisher: {
+        ref: {
+            collectionName: string;
+            id: string;
+        }
+    },
+    comment: string;
+    date: Date;
+    postId: string;
+    createdAt: Date;
+    updatedAt: Date;
+
 }

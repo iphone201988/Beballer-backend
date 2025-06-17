@@ -6,3 +6,7 @@ export type UserLoginType = {
     longitude: number;
     type: string;
 };
+
+export type subscribeType = {
+  id: string;
+};

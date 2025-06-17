@@ -7,6 +7,7 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     id: {
       type: String,
       unique: true,
+      index: true,
     },
     username: {
       type: String,
@@ -124,8 +125,12 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     games: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "games",
+         _id: false,
+        collectionName:{
+          type: String,
+          enum: ['games'],
+        },
+        id:String,
       },
     ],
     friendList: [
@@ -217,6 +222,7 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
   { timestamps: true }
 );
 playerSchema.index({ location: "2dsphere" });
+playerSchema.index({ "subscriptions.id": 1, "subscriptions.collectionName": 1 });
 
 const Players = mongoose.model<PlayerModel>("player", playerSchema);
 export default Players;

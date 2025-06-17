@@ -7,6 +7,7 @@ const organizerSchema = new mongoose.Schema<PlayerModel>(
     id: {
       type: String,
       unique: true,
+      index: true,
     },
     username: {
       type: String,
@@ -97,6 +98,7 @@ const organizerSchema = new mongoose.Schema<PlayerModel>(
   { timestamps: true }
 );
 organizerSchema.index({ location: "2dsphere" });
+organizerSchema.index({ "subscriptions.id": 1, "subscriptions.collectionName": 1 });
 
 const Organizer = mongoose.model<PlayerModel>("organizer", organizerSchema);
 export default Organizer;

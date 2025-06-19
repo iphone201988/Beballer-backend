@@ -21,4 +21,10 @@ playerRouter.post(
     playerController.createPlayerProfile
 );
 
+playerRouter.get(
+    "/get-all-teams",
+    authenticationMiddleware,
+    playerController.getTeams
+);
+
 export default playerRouter;

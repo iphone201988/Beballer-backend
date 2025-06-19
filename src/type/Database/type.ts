@@ -1,3 +1,4 @@
+import { stringTo2048 } from "aws-sdk/clients/customerprofiles";
 import { Interface } from "readline";
 
 export interface PlayerModel {
@@ -147,4 +148,72 @@ export interface commentModel {
     createdAt: Date;
     updatedAt: Date;
 
+}
+
+
+export interface gameModel {
+    id: string;
+    date: Date;
+    team1ScoreTeam1: number;
+    team1ScoreTeam2: number;
+    team2ScoreTeam1: number;
+    team2ScoreTeam2: number;
+    isAutoRefereeing: boolean;
+    visible: boolean;
+    hasAcceptedInvitationReferee: boolean;
+    organizer: {
+        ref: {
+            collectionName: string;
+            id: string;
+        }
+    },
+    isVisible: boolean;
+    type: string;
+    mode: number;
+    team2Players: any[];
+    hasAcceptedInvitationTeam2: boolean[];
+    team1Players: any[];
+    hasAcceptedInvitationTeam1: boolean[];
+    field: {
+        ref: {
+            collectionName: string;
+            id: string;
+        }
+    },
+    status:stringTo2048,
+    teamToValidate: number;
+ 
+}
+
+
+export interface teamsModel {
+    id: string;
+    coordinates: number[];
+    _id: string;
+    name: string;
+    type: string;
+    url: string;
+    geohash: string;
+    gender: string;
+    location: {
+        type: "Point";
+        coordinates: number[];
+    };
+}
+
+export interface proGamesTeamsModel {
+    id: string;
+    coordinates: number[];
+    _id: string;
+    name: string;
+    type: string;
+    url: string;
+    geohash: string;
+    gender: string;
+    location: {
+        type: "Point";
+        coordinates: number[];
+    };
+    imageURL: string;
+    country: string;
 }

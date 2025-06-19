@@ -11,4 +11,10 @@ courtRouter.post(
     courtController.newCourt
 );
 
+courtRouter.get(
+    "/get-courts",
+    authenticationMiddleware,
+    courtController.getCourts
+);
+
 export default courtRouter;

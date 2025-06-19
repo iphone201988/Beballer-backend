@@ -29,12 +29,12 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     subscriptions: [
       {
-         _id: false,
-        collectionName:{
+        _id: false,
+        collectionName: {
           type: String,
           enum: ['organizers', 'players'],
         },
-        id:String,
+        id: String,
       },
     ],
     sector: {
@@ -54,7 +54,6 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     referralCode: {
       type: String,
-      unique: true,
     },
     rankSector: {
       type: Number,
@@ -76,12 +75,7 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     profileDescription: {
       type: String,
     },
-    posts: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Posts",
-      },
-    ],
+    posts: [],
     location: {
       type: {
         type: String,
@@ -93,8 +87,12 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     likes: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "player",
+         _id: false,
+        collectionName:{
+          type: String,
+          enum: ['organizers', 'players'],
+        },
+        id:String,
       },
     ],
     lastName: {
@@ -112,8 +110,12 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     godchildren: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "player",
+         _id: false,
+        collectionName:{
+          type: String,
+          enum: ['organizers', 'players'],
+        },
+        id:String,
       },
     ],
     geohash: {
@@ -125,22 +127,26 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     games: [
       {
-         _id: false,
-        collectionName:{
+        _id: false,
+        collectionName: {
           type: String,
           enum: ['games'],
         },
-        id:String,
+        id: String,
       },
     ],
     friendList: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "player",
+         _id: false,
+        collectionName:{
+          type: String,
+          enum: ['organizers', 'players'],
+        },
+        id:String,
       },
     ],
     followers: [
-       {
+      {
         collectionName: {
           type: String,
           default: "players",
@@ -155,20 +161,32 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     favoriteEvents: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "events",
+        _id: false,
+        collectionName: {
+          type: String,
+          enum: ['events'],
+        },
+        id: String,
       },
     ],
     favoriteCourts: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "courts",
+        _id: false,
+        collectionName: {
+          type: String,
+          enum: ['courts'],
+        },
+        id: String,
       },
     ],
     favoriteBars: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "bars",
+        _id: false,
+        collectionName: {
+          type: String,
+          enum: ['bars'],
+        },
+        id: String,
       },
     ],
     country: {
@@ -179,14 +197,22 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     blockedUsers: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "player",
+         _id: false,
+        collectionName:{
+          type: String,
+          enum: ['organizers', 'players'],
+        },
+        id:String,
       },
     ],
-    blockedBy: [
+    blockedBy:[
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "player",
+         _id: false,
+        collectionName:{
+          type: String,
+          enum: ['organizers', 'players'],
+        },
+        id:String,
       },
     ],
     birthDate: {
@@ -198,8 +224,12 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     badges: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "badges",
+        _id: false,
+        collectionName: {
+          type: String,
+          enum: ['badges'],
+        },
+        id: String,
       },
     ],
     isOnboardAnalyticsDone: {

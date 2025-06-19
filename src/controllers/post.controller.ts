@@ -302,7 +302,7 @@ import ErrorHandler from "../utils/ErrorHandler";
 
 const getPosts = TryCatch(async (req: Request, res: Response) => {
     const { user, userType } = req;
-    const onlySubscribed = false;
+    const onlySubscribed = req.query.isOnlySubscribed === 'yes' ? true : false;
     const collectionName = userType === 'player' ? 'players' : 'organizers';
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;

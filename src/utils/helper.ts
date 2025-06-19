@@ -52,6 +52,23 @@ export const getFileteredUser = (user: PlayerModel) => {
     createdAt: undefined,
     updatedAt: undefined,
     __v: undefined,
+    reports: undefined,
+    likes: undefined,
+    posts: undefined,
+    godchildren: undefined,
+    favoriteEvents: undefined,
+    followers: undefined,
+    games: undefined,
+    blockedBy: undefined,
+    blockedUsers: undefined,
+    friendList: undefined,
+    favoriteCourts: undefined,
+    favoriteCamps: undefined,
+    favoriteTournaments: undefined,
+    favoriteBars: undefined,
+    deviceToken: undefined,
+    deviceType: undefined,
+
   };
 };
 

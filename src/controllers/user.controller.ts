@@ -41,20 +41,32 @@ const userLogin = TryCatch(async (req: Request<{}, {}, UserLoginType>, res: Resp
       user.location = { type: "Point", coordinates: [longitude, latitude] };
     await user.save();
   }
+  const followingCount = user.subscriptions.length;
+  const followersCount = user.followers.length;
 
   return SUCCESS(res, 200, "LoggedIn successfully", {
     data: {
       token: token ? token : undefined,
-      user: getFileteredUser(user.toObject()),
+      user: {
+        ...getFileteredUser(user.toObject()),
+        followingCount,
+        followersCount
+      },
     },
   });
 });
 
 const getUserProfile = TryCatch(async (req: Request, res: Response) => {
   const { user } = req;
+   const followingCount = user.subscriptions.length;
+  const followersCount = user.followers.length;
   return SUCCESS(res, 200, "User fetched successfully", {
     data: {
-      user: getFileteredUser(user.toObject()),
+      user: {
+        ...getFileteredUser(user.toObject()),
+        followingCount,
+        followersCount
+      },
     },
   });
 });

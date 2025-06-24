@@ -1,5 +1,6 @@
 import { stringTo2048 } from "aws-sdk/clients/customerprofiles";
 import { Interface } from "readline";
+import badgeModel from "../../models/badge.model";
 
 export interface PlayerModel {
     id: string;
@@ -56,8 +57,18 @@ export interface PlayerModel {
     deviceToken: string;
     deviceType: number;
     jti: string;
+    recutersViewed: string;
     isOnboardAnalyticsDone: boolean;
     profilePicture?: string;
+    favoriteProTeam:{
+         ref: {
+            collectionName: string;
+            id: string;
+        }
+    },
+    position: string;
+    playPositionId: number
+
 }
 
 export interface postModel {
@@ -216,4 +227,13 @@ export interface proGamesTeamsModel {
     };
     imageURL: string;
     country: string;
+}
+
+export interface badgeModel {
+    id: string;
+    condition: string;
+    count: number;
+    image: string;
+    name: string;
+    category: string;
 }

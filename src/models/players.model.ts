@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { userType, gender, deviceType } from "../utils/enum";
 import { PlayerModel } from "../type/Database/type";
+import { ref } from "process";
 
 const playerSchema = new mongoose.Schema<PlayerModel>(
   {
@@ -222,6 +223,10 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
       type: String,
       default: null,
     },
+    recutersViewed: {
+      type:String,
+      default: null
+    },
     badges: [
       {
         _id: false,
@@ -248,6 +253,18 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
       require: true,
     },
     jti: { type: String },
+    favoriteProTeam: {
+         ref: {
+            collectionName: String,
+            id: String,
+        }
+    },
+    position: {
+      type: String,
+    },
+    playPositionId:{
+      type: Number
+    }
   },
   { timestamps: true }
 );

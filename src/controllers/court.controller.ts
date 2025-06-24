@@ -25,7 +25,7 @@ const newCourt = TryCatch(async (req: Request<{}, {}, newCourt>, res: Response) 
     grade,
     lat,
     long,
-    photos = req.s3UploadedKeys.photos,
+    photos = req.s3UploadedKeys?.photos,
   } = req.body;
 
   const newFields = await Fields.create({

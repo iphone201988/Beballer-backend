@@ -26,7 +26,7 @@ const postSchema = new mongoose.Schema<postModel>(
         },
         description: {
             type: String,
-            default: "",
+            default: null,
         },
         isFeed: {
             type: Boolean,

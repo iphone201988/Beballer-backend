@@ -11,7 +11,7 @@ import {
 import Players from "../models/players.model";
 import { UserLoginType, subscribeType } from "../type/Api/userApi.type";
 import ErrorHandler from "../utils/ErrorHandler";
-
+import badgeModel from "../models/badge.model";
 const userLogin = TryCatch(async (req: Request<{}, {}, UserLoginType>, res: Response) => {
   const { id, deviceToken, deviceType, latitude, longitude, type } =
     req.body;
@@ -57,15 +57,21 @@ const userLogin = TryCatch(async (req: Request<{}, {}, UserLoginType>, res: Resp
 });
 
 const getUserProfile = TryCatch(async (req: Request, res: Response) => {
-  const { user } = req;
+  const { user,userId } = req;
    const followingCount = user.subscriptions.length;
   const followersCount = user.followers.length;
+  const badgeUri = await badgeModel.find({id:user.badge});
+  const lat = user.location.coordinates[1];
+  const long = user.location.coordinates[0];
   return SUCCESS(res, 200, "User fetched successfully", {
     data: {
       user: {
         ...getFileteredUser(user.toObject()),
         followingCount,
-        followersCount
+        followersCount,
+        badgeUri: badgeUri[0].image,
+        lat,
+        long
       },
     },
   });
@@ -105,8 +111,24 @@ const subscribeUser = TryCatch(async (req: Request<{}, {}, subscribeType>, res: 
 });
 
 
+const isUserNameUnique = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
+  const { username } = req.body;
+  const { userId, userType } = req;
+  let user;
+
+  if (userType === "player") {
+    user = await Players.findOne({ username });
+  } else {
+    user = await Organizer.findOne({ username });
+  }
+  if (user) return next(new ErrorHandler("Username already taken", 400));
+  
+  return SUCCESS(res, 200, "Username is unique");
+});
+
 export default {
   userLogin,
   getUserProfile,
-  subscribeUser
+  subscribeUser,
+  isUserNameUnique
 };

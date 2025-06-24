@@ -21,8 +21,8 @@ const isOnboardAnalyticsDone = TryCatch(async (req: Request, res: Response, next
 
 const createPlayerProfile = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req;
-    const { firstName, lastName, username, birthDate, gender, height,country,countryCode } = req.body;
-    const profilePicture = req.s3UploadedKeys.profilePicture[0];
+    const { firstName, lastName, username, birthDate, gender, height, country, countryCode, position, favoriteProTeam,recutersViewed,playPositionId } = req.body;
+    const profilePicture = req.s3UploadedKeys?.profilePicture[0];
     const player = await Players.findById(userId);
     if (!player) return next(new ErrorHandler("User not found", 400));
     if (!player.isOnboardAnalyticsDone) {
@@ -37,9 +37,20 @@ const createPlayerProfile = TryCatch(async (req: Request, res: Response, next: N
     player.profilePicture = profilePicture;
     player.country = country;
     player.countryCode = countryCode;
+    player.position = position;
+    player.favoriteProTeam = {
+        ref: {
+            collectionName: 'progamesteams',
+            id: favoriteProTeam
+        }
+    };
+    player.position = position;
+    player.recutersViewed = recutersViewed
+    playPositionId && (player.playPositionId = playPositionId)
+
 
     await player.save();
-    console.log('===========askcxazoxcxjio',player);
+    console.log('===========askcxazoxcxjio', player);
     return SUCCESS(res, 200, "Profile Created");
 });
 

@@ -24,5 +24,11 @@ userRouter.post(
   userController.subscribeUser
 );
 
+userRouter.post(
+  "/is-username-unique",
+  authenticationMiddleware,
+  userController.isUserNameUnique
+);
+
 
 export default userRouter;

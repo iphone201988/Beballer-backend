@@ -18,6 +18,10 @@ const createPlayerProfileSchema = {
         }),
         country: stringValidation("Country",false),
         countryCode: stringValidation("Country Code",false),
+        position: stringValidation("Position",false),
+        favoriteProTeam: stringValidation("Favorite Pro Teams",false),
+        recutersViewed: stringValidation("Recuters Viewed",false),
+        playPositionId: Joi.number().optional(),
     })
 }
 

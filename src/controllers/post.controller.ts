@@ -5,132 +5,138 @@ import { likePost, commentOnPost } from "../type/Api/postApi.type";
 import Comments from "../models/comment.model";
 import mongoose from "mongoose";
 import ErrorHandler from "../utils/ErrorHandler";
+import { getFilterPost } from "../utils/helper";
 
 
+const getPosts = TryCatch(async (req: Request, res: Response) => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-// const getPosts = TryCatch(async (req: Request, res: Response) => {
-//     const page = Number(req.query.page) || 1;
-//     const limit = Number(req.query.limit) || 10;
-//     const skip = (page - 1) * limit;
+    const posts = await Posts.aggregate([
+        // Pagination early (push it after filtering if any)
+        { $skip: skip },
+        { $limit: limit },
+        {
+            $lookup: {
+                from: "events",
+                localField: "event.ref.id",
+                foreignField: "id",
+                as: "event"
+            }
+        },
+        {
+            $lookup: {
+                from: "games",
+                localField: "game.ref.id",
+                foreignField: "id",
+                as: "game"
+            }
+        },
+        {
+            $lookup: {
+                from: "comments",
+                localField: "id",
+                foreignField: "postId",
+                as: "comments"
+            }
+        },
+        {
+            $lookup: {
+                from: "fields",
+                let: { courtId: "$court.ref.id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: { $eq: ["$id", "$$courtId"] }
+                        }
+                    }
+                ],
+                as: "court"
+            }
+        },
+        {
+            $addFields: {
+                publisherCollection: "$publisher.ref.collectionName"
+            }
+        },
+        {
+            $lookup: {
+                from: "organizers",
+                let: { pubId: "$publisher.ref.id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: { $eq: ["$id", "$$pubId"] }
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            username: 1,
+                            email: 1,
+                            location: 1,
+                            subscriptions: 1
+                        }
+                    }
+                ],
+                as: "publisherOrganizer"
+            }
+        },
+        {
+            $lookup: {
+                from: "players",
+                let: { pubId: "$publisher.ref.id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: { $eq: ["$id", "$$pubId"] }
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            username: 1,
+                            email: 1,
+                            location: 1,
+                            subscriptions: 1
+                        }
+                    }
+                ],
+                as: "publisherPlayer"
+            }
+        },
+        {
+            $addFields: {
+                publisherData: {
+                    $cond: [
+                        { $eq: ["$publisherCollection", "organizers"] },
+                        { $arrayElemAt: ["$publisherOrganizer", 0] },
+                        { $arrayElemAt: ["$publisherPlayer", 0] }
+                    ]
+                }
+            }
+        },
+        {
+            $project: {
+                publisherOrganizer: 0,
+                publisherPlayer: 0,
+                publisher: 0,
+                publisherCollection: 0
+            }
+        }
+    ]);
+    const totalPosts = await Posts.estimatedDocumentCount();
+    const totalPages = Math.ceil(totalPosts / limit);
 
-//     const posts = await Posts.aggregate([
-//         // Pagination early (push it after filtering if any)
-//         { $skip: skip },
-//         { $limit: limit },
-//         {
-//             $lookup: {
-//                 from: "events",
-//                 localField: "event.ref.id",
-//                 foreignField: "id",
-//                 as: "event"
-//             }
-//         },
-//         {
-//             $lookup: {
-//                 from: "games",
-//                 localField: "game.ref.id",
-//                 foreignField: "id",
-//                 as: "game"
-//             }
-//         },
-//         {
-//             $lookup: {
-//                 from: "comments",
-//                 localField: "id",
-//                 foreignField: "postId",
-//                 as: "comments"
-//             }
-//         },
-//         {
-//             $lookup: {
-//                 from: "fields",
-//                 localField: "court.ref.id",
-//                 foreignField: "id",
-//                 as: "court"
-//             }
-//         },
-//         {
-//             $addFields: {
-//                 publisherCollection: "$publisher.ref.collectionName"
-//             }
-//         },
-//         {
-//             $lookup: {
-//                 from: "organizers",
-//                 let: { pubId: "$publisher.ref.id" },
-//                 pipeline: [
-//                     {
-//                         $match: {
-//                             $expr: { $eq: ["$id", "$$pubId"] }
-//                         }
-//                     },
-//                     {
-//                         $project: {
-//                             _id: 0,
-//                             username: 1,
-//                             email: 1,
-//                             location: 1,
-//                             subscriptions: 1
-//                         }
-//                     }
-//                 ],
-//                 as: "publisherOrganizer"
-//             }
-//         },
-//         {
-//             $lookup: {
-//                 from: "players",
-//                 let: { pubId: "$publisher.ref.id" },
-//                 pipeline: [
-//                     {
-//                         $match: {
-//                             $expr: { $eq: ["$id", "$$pubId"] }
-//                         }
-//                     },
-//                     {
-//                         $project: {
-//                             _id: 0,
-//                             username: 1,
-//                             email: 1,
-//                             location: 1,
-//                             subscriptions: 1
-//                         }
-//                     }
-//                 ],
-//                 as: "publisherPlayer"
-//             }
-//         },
-//         {
-//             $addFields: {
-//                 publisherData: {
-//                     $cond: [
-//                         { $eq: ["$publisherCollection", "organizers"] },
-//                         { $arrayElemAt: ["$publisherOrganizer", 0] },
-//                         { $arrayElemAt: ["$publisherPlayer", 0] }
-//                     ]
-//                 }
-//             }
-//         },
-//         {
-//             $project: {
-//                 publisherOrganizer: 0,
-//                 publisherPlayer: 0,
-//                 publisher: 0,
-//                 publisherCollection: 0
-//             }
-//         }
-//     ]);
-//     const totalPosts = await Posts.estimatedDocumentCount();
-//     const totalPages = Math.ceil(totalPosts / limit);
-
-//     return SUCCESS(res, 200, "Posts fetched successfully", {
-//         data: posts,
-//         pagination: {
-//             currentPage: page,
-//             totalPages
-//         }
-//     });
-// });
+    return SUCCESS(res, 200, "Posts fetched successfully", {
+        data: posts,
+        pagination: {
+            currentPage: page,
+            totalPages
+        }
+    });
+});
 // const getPosts = TryCatch(async (req: Request, res: Response) => {
 //     const { user, userType } = req;
 //     const onlySubscribed = true;
@@ -300,198 +306,198 @@ import ErrorHandler from "../utils/ErrorHandler";
 //     });
 // });
 
-const getPosts = TryCatch(async (req: Request, res: Response) => {
-    const { user, userType } = req;
-    const onlySubscribed = req.query.isOnlySubscribed === 'yes' ? true : false;
-    const collectionName = userType === 'player' ? 'players' : 'organizers';
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+// const getPosts = TryCatch(async (req: Request, res: Response) => {
+//     const { user, userType } = req;
+//     const onlySubscribed = req.query.isOnlySubscribed === 'yes' ? true : false;
+//     const collectionName = userType === 'player' ? 'players' : 'organizers';
+//     const page = Number(req.query.page) || 1;
+//     const limit = Number(req.query.limit) || 10;
+//     const skip = (page - 1) * limit;
 
-    let pipeline: any[] = [];
+//     let pipeline: any[] = [];
 
-    if (onlySubscribed) {
-        const subscribedPublishers = await Promise.all([
-            mongoose.connection.db.collection('organizers').find({
-                subscriptions: {
-                    $elemMatch: {
-                        id: user.id,
-                        collectionName: collectionName
-                    }
-                }
-            }, { projection: { id: 1 } }).toArray(),
-            mongoose.connection.db.collection('players').find({
-                subscriptions: {
-                    $elemMatch: {
-                        id: user.id,
-                        collectionName: collectionName
-                    }
-                }
-            }, { projection: { id: 1 } }).toArray()
-        ]);
+//     if (onlySubscribed) {
+//         const subscribedPublishers = await Promise.all([
+//             mongoose.connection.db.collection('organizers').find({
+//                 subscriptions: {
+//                     $elemMatch: {
+//                         id: user.id,
+//                         collectionName: collectionName
+//                     }
+//                 }
+//             }, { projection: { id: 1 } }).toArray(),
+//             mongoose.connection.db.collection('players').find({
+//                 subscriptions: {
+//                     $elemMatch: {
+//                         id: user.id,
+//                         collectionName: collectionName
+//                     }
+//                 }
+//             }, { projection: { id: 1 } }).toArray()
+//         ]);
 
-        const organizerIds = subscribedPublishers[0].map(org => org.id);
-        const playerIds = subscribedPublishers[1].map(player => player.id);
-        pipeline.push({
-            $match: {
-                $or: [
-                    {
-                        "publisher.ref.collectionName": "organizers",
-                        "publisher.ref.id": { $in: organizerIds }
-                    },
-                    {
-                        "publisher.ref.collectionName": "players", 
-                        "publisher.ref.id": { $in: playerIds }
-                    }
-                ]
-            }
-        });
-    }
+//         const organizerIds = subscribedPublishers[0].map(org => org.id);
+//         const playerIds = subscribedPublishers[1].map(player => player.id);
+//         pipeline.push({
+//             $match: {
+//                 $or: [
+//                     {
+//                         "publisher.ref.collectionName": "organizers",
+//                         "publisher.ref.id": { $in: organizerIds }
+//                     },
+//                     {
+//                         "publisher.ref.collectionName": "players", 
+//                         "publisher.ref.id": { $in: playerIds }
+//                     }
+//                 ]
+//             }
+//         });
+//     }
 
-    pipeline.push({
-        $sort: { date: -1, _id: -1 } 
-    });
+//     pipeline.push({
+//         $sort: { date: -1, _id: -1 } 
+//     });
 
-    pipeline.push({ $skip: skip });
-    pipeline.push({ $limit: limit });
+//     pipeline.push({ $skip: skip });
+//     pipeline.push({ $limit: limit });
 
-    pipeline.push(
-        {
-            $lookup: {
-                from: "events",
-                localField: "event.ref.id",
-                foreignField: "id",
-                as: "event"
-            }
-        },
-        {
-            $lookup: {
-                from: "games",
-                localField: "game.ref.id", 
-                foreignField: "id",
-                as: "game"
-            }
-        },
-        {
-            $lookup: {
-                from: "comments",
-                localField: "id",
-                foreignField: "postId",
-                as: "comments"
-            }
-        },
-        {
-            $lookup: {
-                from: "fields",
-                localField: "court.ref.id",
-                foreignField: "id", 
-                as: "court"
-            }
-        },
-        {
-            $lookup: {
-                from: "organizers",
-                let: { 
-                    pubId: "$publisher.ref.id",
-                    pubCollection: "$publisher.ref.collectionName"
-                },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$$pubCollection", "organizers"] },
-                                    { $eq: ["$id", "$$pubId"] }
-                                ]
-                            }
-                        }
-                    },
-                    {
-                        $project: {
-                            _id: 0,
-                            username: 1,
-                            email: 1,
-                            location: 1,
-                            subscriptions: 1
-                        }
-                    }
-                ],
-                as: "publisherOrganizer"
-            }
-        },
-        {
-            $lookup: {
-                from: "players",
-                let: { 
-                    pubId: "$publisher.ref.id",
-                    pubCollection: "$publisher.ref.collectionName"
-                },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$$pubCollection", "players"] },
-                                    { $eq: ["$id", "$$pubId"] }
-                                ]
-                            }
-                        }
-                    },
-                    {
-                        $project: {
-                            _id: 0,
-                            username: 1,
-                            email: 1,
-                            location: 1,
-                            subscriptions: 1
-                        }
-                    }
-                ],
-                as: "publisherPlayer"
-            }
-        },
-        {
-            $addFields: {
-                publisherData: {
-                    $cond: [
-                        { $eq: ["$publisher.ref.collectionName", "organizers"] },
-                        { $arrayElemAt: ["$publisherOrganizer", 0] },
-                        { $arrayElemAt: ["$publisherPlayer", 0] }
-                    ]
-                }
-            }
-        },
-        {
-            $project: {
-                publisherOrganizer: 0,
-                publisherPlayer: 0
-            }
-        }
-    );
+//     pipeline.push(
+//         {
+//             $lookup: {
+//                 from: "events",
+//                 localField: "event.ref.id",
+//                 foreignField: "id",
+//                 as: "event"
+//             }
+//         },
+//         {
+//             $lookup: {
+//                 from: "games",
+//                 localField: "game.ref.id", 
+//                 foreignField: "id",
+//                 as: "game"
+//             }
+//         },
+//         {
+//             $lookup: {
+//                 from: "comments",
+//                 localField: "id",
+//                 foreignField: "postId",
+//                 as: "comments"
+//             }
+//         },
+//         {
+//             $lookup: {
+//                 from: "fields",
+//                 localField: "court.ref.id",
+//                 foreignField: "id", 
+//                 as: "court"
+//             }
+//         },
+//         {
+//             $lookup: {
+//                 from: "organizers",
+//                 let: { 
+//                     pubId: "$publisher.ref.id",
+//                     pubCollection: "$publisher.ref.collectionName"
+//                 },
+//                 pipeline: [
+//                     {
+//                         $match: {
+//                             $expr: {
+//                                 $and: [
+//                                     { $eq: ["$$pubCollection", "organizers"] },
+//                                     { $eq: ["$id", "$$pubId"] }
+//                                 ]
+//                             }
+//                         }
+//                     },
+//                     {
+//                         $project: {
+//                             _id: 0,
+//                             username: 1,
+//                             email: 1,
+//                             location: 1,
+//                             subscriptions: 1
+//                         }
+//                     }
+//                 ],
+//                 as: "publisherOrganizer"
+//             }
+//         },
+//         {
+//             $lookup: {
+//                 from: "players",
+//                 let: { 
+//                     pubId: "$publisher.ref.id",
+//                     pubCollection: "$publisher.ref.collectionName"
+//                 },
+//                 pipeline: [
+//                     {
+//                         $match: {
+//                             $expr: {
+//                                 $and: [
+//                                     { $eq: ["$$pubCollection", "players"] },
+//                                     { $eq: ["$id", "$$pubId"] }
+//                                 ]
+//                             }
+//                         }
+//                     },
+//                     {
+//                         $project: {
+//                             _id: 0,
+//                             username: 1,
+//                             email: 1,
+//                             location: 1,
+//                             subscriptions: 1
+//                         }
+//                     }
+//                 ],
+//                 as: "publisherPlayer"
+//             }
+//         },
+//         {
+//             $addFields: {
+//                 publisherData: {
+//                     $cond: [
+//                         { $eq: ["$publisher.ref.collectionName", "organizers"] },
+//                         { $arrayElemAt: ["$publisherOrganizer", 0] },
+//                         { $arrayElemAt: ["$publisherPlayer", 0] }
+//                     ]
+//                 }
+//             }
+//         },
+//         {
+//             $project: {
+//                 publisherOrganizer: 0,
+//                 publisherPlayer: 0
+//             }
+//         }
+//     );
 
-    const posts = await Posts.aggregate(pipeline).allowDiskUse(true);
+//     const posts = await Posts.aggregate(pipeline).allowDiskUse(true);
 
-    let totalPosts = 0;
-    if (onlySubscribed) {
-        const countPipeline = pipeline.slice(0, 1);
-        countPipeline.push({ $count: "total" });
-        const countResult = await Posts.aggregate(countPipeline);
-        totalPosts = countResult[0]?.total || 0;
-    } else {
-        totalPosts = await Posts.estimatedDocumentCount();
-    }
+//     let totalPosts = 0;
+//     if (onlySubscribed) {
+//         const countPipeline = pipeline.slice(0, 1);
+//         countPipeline.push({ $count: "total" });
+//         const countResult = await Posts.aggregate(countPipeline);
+//         totalPosts = countResult[0]?.total || 0;
+//     } else {
+//         totalPosts = await Posts.estimatedDocumentCount();
+//     }
 
-    const totalPages = Math.ceil(totalPosts / limit);
+//     const totalPages = Math.ceil(totalPosts / limit);
 
-    return SUCCESS(res, 200, "Posts fetched successfully", {
-        data: posts,
-        pagination: {
-            currentPage: page,
-            totalPages,
-            totalPosts
-        }
-    });
-});
+//     return SUCCESS(res, 200, "Posts fetched successfully", {
+//         data: posts,
+//         pagination: {
+//             currentPage: page,
+//             totalPages,
+//             totalPosts
+//         }
+//     });
+// });
 const likePost = TryCatch(async (req: Request<{}, {}, {}, likePost>, res: Response) => {
     const { postId } = req.query;
     const { user, userType } = req;

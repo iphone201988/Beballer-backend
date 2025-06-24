@@ -68,7 +68,22 @@ export const getFileteredUser = (user: PlayerModel) => {
     favoriteBars: undefined,
     deviceToken: undefined,
     deviceType: undefined,
+    subscriptions: undefined,
+    fcmToken: undefined,
+    badge: undefined,
+    badges: undefined,
+    reported: undefined,
+    location: undefined
 
+  };
+};
+
+export const getFilterPost = (post: any) => {
+  return {
+    ...post,
+    createdAt: undefined,
+    updatedAt: undefined,
+    __v: undefined,
   };
 };
 

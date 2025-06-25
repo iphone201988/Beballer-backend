@@ -35,10 +35,13 @@ const userLogin = TryCatch(async (req: Request<{}, {}, UserLoginType>, res: Resp
     const jti = generateRandomString(20);
     token = generateJwtToken({ userId: user._id, type, jti });
     user.jti = jti;
-    user.deviceToken = deviceToken;
+    user.deviceToken = deviceToken ;
     user.deviceType = deviceType;
-    if (latitude && longitude)
+    if (latitude && longitude){
       user.location = { type: "Point", coordinates: [longitude, latitude] };
+    }else{
+      user.location = null
+    }
     await user.save();
   }
   const followingCount = user.subscriptions.length;
@@ -61,15 +64,19 @@ const getUserProfile = TryCatch(async (req: Request, res: Response) => {
    const followingCount = user.subscriptions.length;
   const followersCount = user.followers.length;
   const badgeUri = await badgeModel.find({id:user.badge});
-  const lat = user.location.coordinates[1];
-  const long = user.location.coordinates[0];
+  let lat = 0;
+  let long = 0;
+  if(user.location.coordinates && user.location.coordinates.length > 0){
+     lat = user.location.coordinates[1];
+     long = user.location.coordinates[0];
+  }
   return SUCCESS(res, 200, "User fetched successfully", {
     data: {
       user: {
         ...getFileteredUser(user.toObject()),
         followingCount,
         followersCount,
-        badgeUri: badgeUri[0].image,
+        badgeUri: badgeUri[0]?.image ? badgeUri[0]?.image : null,
         lat,
         long
       },

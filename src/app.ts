@@ -3,12 +3,19 @@ import "dotenv/config";
 import cors from "cors";
 import { errorMiddleware } from "./middleware/error.middleware";
 import router from "./routes/route";
+import updateEventDates from "./script/createdAt";
+import updateContentTypeBulk from "./script/updatePostContenttype";
 import main from "./script";
 const app = express();
 
 app.use(express.json());
 app.use(cors());
+
+//  // run scripts
+// updateEventDates();
 // main();
+// updateContentTypeBulk();
+
 app.use("/api/v1", router);
 
 app.use("/*", (req:Request, res:Response) => {

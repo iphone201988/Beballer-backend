@@ -1,9 +1,11 @@
 import mongoose from 'mongoose'
 import { gameModel } from '../type/Database/type'
+
 const gameSchem = new mongoose.Schema<gameModel>({
     id: {
         type: String,
         unique: true,
+        index: true
     },
     date: {
         type: Date,
@@ -108,7 +110,14 @@ const gameSchem = new mongoose.Schema<gameModel>({
         type: Number,
         default: 1
     }
-})
+}
+    , {
+        timestamps: true
+    }
+)
+
+// gameSchem.index({ id: 1 });
+
 
 const Game = mongoose.model<gameModel>('games', gameSchem)
 export default Game

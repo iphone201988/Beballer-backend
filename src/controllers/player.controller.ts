@@ -47,15 +47,29 @@ const createPlayerProfile = TryCatch(async (req: Request, res: Response, next: N
     player.position = position;
     player.recutersViewed = recutersViewed
     playPositionId && (player.playPositionId = playPositionId)
-
+    
+    if(!player.isProfileCompleted){
+        player.isProfileCompleted = true
+    }
 
     await player.save();
-    console.log('===========askcxazoxcxjio', player);
     return SUCCESS(res, 200, "Profile Created");
 });
 
 const getTeams = TryCatch(async (req: Request, res: Response) => {
-    const teams = await ProGamesTeams.find();
+ const teams = await ProGamesTeams.aggregate([
+        {
+            $project: {
+                coordinates: '$location.coordinates',
+                _id: 1,
+                id:1,
+                name: 1,
+                type: 1,
+                url: 1,
+                imageURL: 1 // Exclude _id
+            }
+        }
+    ]);
 
     return SUCCESS(res, 200, "Teams Fetched Successfully", {
         data: teams

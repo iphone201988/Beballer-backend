@@ -1,5 +1,6 @@
 import Players from "../models/players.model";
 import Fields from "../models/fields.model";
+import Posts from "../models/post.model";
 import AWS from 'aws-sdk';
 import pLimit from 'p-limit';
 
@@ -174,10 +175,85 @@ const updateFieldsPhotos = async () => {
     throw error;
   }
 };
+
+
+const postImages = async () => {
+  try {
+    const posts = await Posts.find({ contentType: 'image' }).select('id image');
+    console.log(`Total image posts: ${posts.length}`);
+
+    const extensions = ['.jpeg', '.jpg', '.png', '.gif', '']; // Added '' for no extension
+    let count = 0;
+
+    const limit = pLimit(10); // Max 10 concurrent S3 checks
+    const updateOps = [];
+
+    const tasks = posts.map(post =>
+      limit(async () => {
+        const postId = post.id;
+        let foundImage = null;
+
+        for (const ext of extensions) {
+          const key = `Post Pictures/${postId}${ext}`;
+          try {
+            await s3.headObject({
+              Bucket: 'beballer-bucket',
+              Key: key
+            }).promise();
+
+            // Split the key to verify postId matches
+            const keyPostId = key.split('/')[1].split('.')[0]; // Get ID before any extension (or none)
+            if (keyPostId === postId) {
+              foundImage = `/${key}`;
+              break;
+            }
+          } catch (error) {
+            if (error.code !== 'NotFound') {
+              console.error(`Error checking ${key} for post ${postId}:`, error);
+            }
+          }
+        }
+
+        console.log(`Found image for post ${postId}: ${foundImage || 'None'}`);
+
+        if (foundImage && foundImage !== post.image) {
+          updateOps.push({
+            updateOne: {
+              filter: { id: postId },
+              update: { $set: { image: foundImage } }
+            }
+          });
+          console.log(`Queued update for post ${postId}: ${foundImage}`);
+          count++;
+        } else if (!foundImage) {
+          console.log(`No image found for post ${postId}`);
+        }
+      })
+    );
+
+    await Promise.all(tasks);
+
+    if (updateOps.length > 0) {
+      const result = await Posts.bulkWrite(updateOps);
+      console.log(`Updated ${result.modifiedCount} posts.`);
+    } else {
+      console.log(`No post image updates needed.`);
+    }
+
+    console.log(`Post images update process completed. Total updates: ${count}`);
+  } catch (error) {
+    console.error('Error in postImages:', error);
+    throw error;
+  }
+};
+
+
 const main = async () => {
     try {
     // await profileImageScript();
-    await updateFieldsPhotos();
+    // await updateFieldsPhotos();
+    // await updateEventDates();
+    await postImages();
     console.log('Script execution completed successfully');
   } catch (error) {
     console.error('Script execution failed:', error);

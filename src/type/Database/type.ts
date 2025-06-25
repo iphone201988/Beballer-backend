@@ -27,7 +27,7 @@ export interface PlayerModel {
     location?: {
         type: "Point";
         coordinates: number[];
-    };
+    } | null;
     likes: string[];
     lastName?: string;
     lastLogon?: Date;
@@ -67,7 +67,8 @@ export interface PlayerModel {
         }
     },
     position: string;
-    playPositionId: number
+    playPositionId: number,
+    isProfileCompleted: boolean
 
 }
 
@@ -76,6 +77,7 @@ export interface postModel {
     date: Date;
     reports: string[];
     country: string;
+    image: string;
     game: {
         ref: {
             collectionName: string;
@@ -103,7 +105,14 @@ export interface postModel {
             collectionName: string;
             id: string;
         }
+    },
+    court: {
+        ref: {
+            collectionName: string;
+            id: string;
+        }
     }
+    contentType: string;
 }
 
 export interface fieldsModel {
@@ -193,6 +202,8 @@ export interface gameModel {
     },
     status:stringTo2048,
     teamToValidate: number;
+    createdAt: Date;
+    updatedAt: Date;
  
 }
 
@@ -236,4 +247,36 @@ export interface badgeModel {
     image: string;
     name: string;
     category: string;
+}
+
+export interface eventModel {
+    id: string;
+    formats: string;
+    hasCategories: boolean;
+    type: string;
+    geohash: string;
+    isVisibleTo: string[];
+    paymentStatus: number;
+    address: string;
+    hasSponsors: boolean;
+    discountCode: string;
+    name: string;
+    referees: string[];
+    startDate: Date;
+    refereesCode: string;
+    organizersCode: string;
+    spectatorsCode: string;
+    creationDate: Date;
+    country: string;
+    city: string;
+    region: string;
+    shareLink: string;
+    organizers: string[];
+    endDate: Date;
+    spectators: string[];
+    isVisible: boolean;
+    location: {
+        type: "Point";
+        coordinates: number[];
+    };
 }

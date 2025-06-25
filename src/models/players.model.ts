@@ -264,6 +264,10 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     playPositionId:{
       type: Number
+    },
+    isProfileCompleted: {
+      type: Boolean,
+      default: false,
     }
   },
   { timestamps: true }

@@ -41,5 +41,5 @@ const proGamesTeamsSchema = new mongoose.Schema({
     timestamps: true
 }
 )  
-const ProGamesTeams = mongoose.model("progamesteamlatests", proGamesTeamsSchema);
+const ProGamesTeams = mongoose.model("progamesteams", proGamesTeamsSchema);
 export default ProGamesTeams;

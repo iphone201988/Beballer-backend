@@ -6,15 +6,17 @@ import Comments from "../models/comment.model";
 import mongoose from "mongoose";
 import ErrorHandler from "../utils/ErrorHandler";
 import { getFilterPost } from "../utils/helper";
+import { date } from "joi";
 
 
 const getPosts = TryCatch(async (req: Request, res: Response) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-
+    const { user, userType } = req;
+    const collectionName = userType === 'player' ? 'players' : 'organizers';
     const posts = await Posts.aggregate([
-        // Pagination early (push it after filtering if any)
+        { $sort: { date: -1 } },
         { $skip: skip },
         { $limit: limit },
         {
@@ -22,7 +24,50 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
                 from: "events",
                 localField: "event.ref.id",
                 foreignField: "id",
-                as: "event"
+                as: "event",
+                pipeline: [
+                    {
+                        $project: {
+                            formats: 1,
+                            hasCategories: 1,
+                            type: 1,
+                            geohash: 1,
+                            isVisibleToPublic: 1,
+                            paymentStatus: 1,
+                            address: 1,
+                            coordinates: {
+                                $cond: [
+                                    { $eq: ["$location", null] },
+                                    null,
+                                    "$location.coordinates"
+                                ]
+                            },
+                            hasSponsors: 1,
+                            discountCode: 1,
+                            name: 1,
+                            referees: 1,
+                            startDate: 1,
+                            refereesCode: 1,
+                            organizersCode: 1,
+                            spectatorsCode: 1,
+                            country: 1,
+                            city: 1,
+                            region: 1,
+                            shareLink: 1,
+                            // organizers: 1,
+                            endDate: 1,
+                            spectators: 1,
+                            isVisible: 1,
+                            createdAt: 1,
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: {
+                path: "$event",
+                preserveNullAndEmptyArrays: true
             }
         },
         {
@@ -30,7 +75,72 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
                 from: "games",
                 localField: "game.ref.id",
                 foreignField: "id",
-                as: "game"
+                as: "game",
+                 pipeline: [
+                    {
+                        $lookup: {
+                            from: "fields",
+                            localField: "field.ref.id",
+                            foreignField: "id",
+                            as: "fieldData"
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: "$fieldData",
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $project: {
+                            createdAt: 1,
+                            id: 1,
+                            type: 1,
+                            status: 1,
+                            startDate: 1,
+                            date: 1,
+                            field: {
+                                $cond: [
+                                    { $eq: ["$fieldData", null] },
+                                    null,
+                                    {
+                                        id: "$fieldData.id",
+                                        _id: "$fieldData._id",
+                                        name: "$fieldData.name",
+                                        country: "$fieldData.country",
+                                        city: "$fieldData.city",
+                                        region: "$fieldData.region",
+                                        photos: "$fieldData.photos",
+                                        postalCode: "$fieldData.postalCode",
+                                    }
+                                ]
+                            },
+                            team1Players: 1,
+                            team2Players: 1,
+                            referees: 1,
+                            organizer: 1,
+                            hasAcceptedInvitationTeam2: 1,
+                            hasAcceptedInvitationTeam1: 1,
+                            hasAcceptedInvitationReferee: 1,
+                            mode: 1,
+                            isAutoRefereeing: 1,
+                            visible: 1,
+                            teamToValidate: 1,
+                            scoreTeam1: 1,
+                            scoreTeam2: 1,
+                            team1ScoreTeam1: 1,
+                            team1ScoreTeam2: 1,
+                            team2ScoreTeam1: 1,
+                            team2ScoreTeam2: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: {
+                path: "$game",
+                preserveNullAndEmptyArrays: true
             }
         },
         {
@@ -50,14 +160,63 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
                         $match: {
                             $expr: { $eq: ["$id", "$$courtId"] }
                         }
+                    },
+                    {
+                        $project: {
+                            geohash: 1,
+                            coordinates: {
+                                $cond: [
+                                    { $eq: ["$location", null] },
+                                    null,
+                                    "$location.coordinates"
+                                ]
+                            },
+                            name: 1,
+                            country: 1,
+                            city: 1,
+                            region: 1,
+                            shareLink: 1,
+                            id: 1,
+                            photos: 1,
+                            postalCode: 1,
+                            addressString: 1,
+                            createdAt: 1,
+                            description: 1,
+                            accessibility: 1,
+                            hasWaterPoint: 1,
+                            isWomanFriendly: 1,
+                            areDimensionsStandard: 1,
+                            hoopsCount: 1,
+                            boardType: 1,
+                            floorType: 1,
+                            netType: 1,
+                            level: 1,
+                            grade: 1
+                        }
                     }
                 ],
                 as: "court"
             }
         },
         {
+            $unwind: {
+                path: "$court",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
             $addFields: {
                 publisherCollection: "$publisher.ref.collectionName"
+            }
+        },
+        {
+            $addFields: {
+                likesCount: { $size: "$likes" }
+            }
+        },
+        {
+            $addFields: {
+                commentCount: { $size: "$comments" }
             }
         },
         {
@@ -72,10 +231,22 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
                     },
                     {
                         $project: {
-                            _id: 0,
+                            _id: 1,
+                            id: 1,
                             username: 1,
-                            email: 1,
-                            location: 1,
+                            firstName: 1,
+                            lastName: 1,
+                            coordinates: {
+                                $cond: [
+                                    { $eq: ["$location", null] },
+                                    null,
+                                    "$location.coordinates"
+                                ]
+                            },
+                            city: 1,
+                            country: 1,
+                            profilePicture: 1,
+                            verified: 1,
                             subscriptions: 1
                         }
                     }
@@ -95,10 +266,22 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
                     },
                     {
                         $project: {
-                            _id: 0,
+                            _id: 1,
+                            id: 1,
                             username: 1,
-                            email: 1,
-                            location: 1,
+                            firstName: 1,
+                            lastName: 1,
+                            coordinates: {
+                                $cond: [
+                                    { $eq: ["$location", null] },
+                                    null,
+                                    "$location.coordinates"
+                                ]
+                            },
+                            city: 1,
+                            country: 1,
+                            profilePicture: 1,
+                            verified: 1,
                             subscriptions: 1
                         }
                     }
@@ -118,11 +301,93 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
             }
         },
         {
+            $addFields: {
+                isSubscribed: {
+                    $in: [
+                        {
+                            collectionName: userType === 'player' ? 'players' : 'organizers',
+                            id: user.id
+                        },
+                        { $ifNull: ["$publisherData.subscriptions", []] }
+                    ]
+                }
+            }
+        },
+        {
+            $addFields: {
+                isLikedByCurrentUser: {
+                    $in: [
+                        {
+                            collectionName: userType === 'player' ? 'players' : 'organizers',
+                            id: user.id
+                        },
+                        { $ifNull: ["$likes", []] }
+                    ]
+                }
+            }
+        },
+        {
+            $addFields: {
+                isSharedByCurrentUser: {
+                    $in: [
+                        {
+                            collectionName: userType === 'player' ? 'players' : 'organizers',
+                            id: user.id
+                        },
+                        { $ifNull: ["$shares", []] }
+                    ]
+                }
+            }
+        },
+        {
+            $addFields: {
+                isCommentedByCurrentUser: {
+
+                    $in: [
+                        {
+                            collectionName: userType === 'player' ? 'players' : 'organizers',
+                            id: user.id
+                        },
+                        {
+                            $ifNull: [
+                                {
+                                    $map: {
+                                        input: "$comments",
+                                        as: "comment",
+                                        in: "$$comment.publisher.ref"
+                                    }
+                                },
+                                []
+                            ]
+                        }
+                    ]
+
+                }
+            }
+        },
+        // {
+        //     $match: {
+        //         "publisherData.subscriptions": {
+        //             $elemMatch: {
+        //                 id: user.id,
+        //                 collectionName: collectionName
+        //             }
+        //         }
+        //     },
+        // },
+        {
             $project: {
                 publisherOrganizer: 0,
                 publisherPlayer: 0,
                 publisher: 0,
-                publisherCollection: 0
+                publisherCollection: 0,
+                likes: 0,
+                comments: 0,
+                shares: 0,
+                "publisherData.subscriptions": 0,
+                proGames: 0,
+                reports: 0
+
             }
         }
     ]);
@@ -137,7 +402,7 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
         }
     });
 });
-// const getPosts = TryCatch(async (req: Request, res: Response) => {
+// const getPostsz = TryCatch(async (req: Request, res: Response) => {
 //     const { user, userType } = req;
 //     const onlySubscribed = true;
 //     const collectionName = userType === 'player' ? 'players' : 'organizers';
@@ -535,7 +800,7 @@ const commentOnpost = TryCatch(async (req: Request<{}, {}, commentOnPost>, res: 
         postId,
         publisher: {
             ref: {
-                collectionName: userType,
+                collectionName: userType === 'player' ? 'players' : 'organizers',
                 id: user.id
             }
         }

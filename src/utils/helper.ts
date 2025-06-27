@@ -73,7 +73,11 @@ export const getFileteredUser = (user: PlayerModel) => {
     badge: undefined,
     badges: undefined,
     reported: undefined,
-    location: undefined
+    location: undefined,
+    email: undefined,
+    profileDescription: undefined,
+    geohash: undefined,
+    rankCountry: undefined,
 
   };
 };

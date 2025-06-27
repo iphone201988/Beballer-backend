@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { userType } from "../utils/enum";
 import Organizer from "../models/organizers.model";
+import teamsModel from "../models/teams.model";
 import {
   generateJwtToken,
   generateRandomString,
@@ -66,6 +67,15 @@ const getUserProfile = TryCatch(async (req: Request, res: Response) => {
   const badgeUri = await badgeModel.find({id:user.badge});
   let lat = 0;
   let long = 0;
+  //   let favoriteProTeam:any = {}
+  //  if(user.favoriteProTeam.ref.collectionName === 'progamesteams'){
+  //   console.log(user.favoriteProTeam)
+  //    const proTeam = await teamsModel.findOne({id:user.favoriteProTeam.ref.id}) ;
+  //    console.log('===========saddadsdfads',proTeam);
+  //    favoriteProTeam.id = proTeam?.id;
+  //    favoriteProTeam.name = proTeam?.name;
+  //    if(proTeam?.imageURL)favoriteProTeam.imageURL = proTeam?.imageURL
+  //  }
   if(user.location.coordinates && user.location.coordinates.length > 0){
      lat = user.location.coordinates[1];
      long = user.location.coordinates[0];
@@ -78,7 +88,8 @@ const getUserProfile = TryCatch(async (req: Request, res: Response) => {
         followersCount,
         badgeUri: badgeUri[0]?.image ? badgeUri[0]?.image : null,
         lat,
-        long
+        long,
+        // favoriteProTeam
       },
     },
   });

@@ -106,7 +106,7 @@ const fieldsSchema = new mongoose.Schema<fieldsModel>({
 },
     { timestamps: true }
 );
-fieldsSchema.index({ address: "2dsphere" });
+fieldsSchema.index({ location: "2dsphere" });
 
 const Fields = mongoose.model<fieldsModel>("field", fieldsSchema);
 export default Fields;

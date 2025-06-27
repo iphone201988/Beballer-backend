@@ -34,6 +34,10 @@ const teamSchema = new mongoose.Schema<teamsModel>({
             type: [Number],
         },
     },
+    imageURL: {
+        type: String,
+        default: null
+    }
 },
 {
     timestamps: true

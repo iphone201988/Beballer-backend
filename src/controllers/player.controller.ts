@@ -21,7 +21,7 @@ const isOnboardAnalyticsDone = TryCatch(async (req: Request, res: Response, next
 
 const createPlayerProfile = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req;
-    const { firstName, lastName, username, birthDate, gender, height, country, countryCode, position, favoriteProTeam,recutersViewed,playPositionId } = req.body;
+    const { firstName, lastName, username, birthDate, gender, height, country, countryCode,city, position, favoriteProTeam,recutersViewed,playPositionId } = req.body;
     const profilePicture = req.s3UploadedKeys?.profilePicture[0];
     const player = await Players.findById(userId);
     if (!player) return next(new ErrorHandler("User not found", 400));
@@ -44,6 +44,7 @@ const createPlayerProfile = TryCatch(async (req: Request, res: Response, next: N
             id: favoriteProTeam
         }
     };
+    player.city = city
     player.position = position;
     player.recutersViewed = recutersViewed
     playPositionId && (player.playPositionId = playPositionId)

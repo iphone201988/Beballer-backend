@@ -1,4 +1,4 @@
-import Joi from "joi";
+import Joi, { string } from "joi";
 import { deviceType } from "../utils/enum";
 import {stringValidation} from "./index";
 
@@ -22,6 +22,7 @@ const createPlayerProfileSchema = {
         favoriteProTeam: stringValidation("Favorite Pro Teams",false),
         recutersViewed: stringValidation("Recuters Viewed",false),
         playPositionId: Joi.number().optional(),
+        city:stringValidation("City",false),
     })
 }
 

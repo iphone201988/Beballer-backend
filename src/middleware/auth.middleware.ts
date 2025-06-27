@@ -28,8 +28,8 @@ export const authenticationMiddleware = TryCatch(
 
     if (!user) return next(new ErrorHandler("User not found", 401));
 
-    if (decode.jti !== user.jti)
-      return next(new ErrorHandler("Unauthorized", 401));
+    // if (decode.jti !== user.jti)
+    //   return next(new ErrorHandler("Unauthorized", 401));
 
     await user.save();
     req.userId = user._id.toString();

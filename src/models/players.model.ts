@@ -16,9 +16,11 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     firstName: {
       type: String,
+      default:null
     },
     email: {
       type: String,
+      default:null
     },
     verified: {
       type: Boolean,
@@ -40,6 +42,7 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     ],
     sector: {
       type: String,
+      default:null
     },
     score: {
       type: Number,
@@ -52,9 +55,11 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     region: {
       type: String,
+      default:null
     },
     referralCode: {
       type: String,
+      default:null
     },
     rankSector: {
       type: Number,
@@ -75,6 +80,7 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     progression: [{ type: Number }],
     profileDescription: {
       type: String,
+      default:null
     },
     posts: [],
     location: {
@@ -98,12 +104,14 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     ],
     lastName: {
       type: String,
+      default:null
     },
     lastLogon: {
       type: Date,
     },
     height: {
       type: Number,
+      default: null,
     },
     role: {
       type: String,
@@ -121,6 +129,7 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     ],
     geohash: {
       type: String,
+      default: null,
     },
     gender: {
       type: String,
@@ -159,6 +168,7 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     ],
     feedCountry: {
       type: String,
+      default: null,
     },
     favoriteEvents: [
       {
@@ -192,9 +202,11 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     ],
     country: {
       type: String,
+      default: null,
     },
     city: {
       type: String,
+      default: null,
     },
     blockedUsers: [
       {
@@ -218,6 +230,7 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     ],
     birthDate: {
       type: Date,
+      default: null,
     },
     profilePicture: {
       type: String,
@@ -243,6 +256,7 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     badge: {
       type: String,
+      default: null
     },
     countryCode: { type: String, require: true },
     phone: { type: String, require: true, unique: true },
@@ -261,9 +275,11 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     },
     position: {
       type: String,
+      default: null
     },
     playPositionId:{
-      type: Number
+      type: Number,
+      default: null
     },
     isProfileCompleted: {
       type: Boolean,

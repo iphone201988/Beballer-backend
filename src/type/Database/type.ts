@@ -221,6 +221,7 @@ export interface teamsModel {
         type: "Point";
         coordinates: number[];
     };
+    imageURL: string;
 }
 
 export interface proGamesTeamsModel {

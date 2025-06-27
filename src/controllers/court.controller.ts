@@ -95,15 +95,22 @@ const getCourts = TryCatch(async (req: Request, res: Response) => {
       $limit: limit,
     },
     {
+      $addFields: {
+          long: { $arrayElemAt: ["$location.coordinates", 0] },
+          lat: { $arrayElemAt: ["$location.coordinates", 1] },
+      }
+    },
+    {
       $project: {
         // Include desired fields
         photos: 1,
         name: 1,
-        address: 1,
-        location: 1,
         createdAt: 1,
-        id:1,
+        id: 1,
         distance: { $divide: [{ $round: ["$distance", 2] }, 1000] },
+        hoopsCount: 1,
+        long: 1,
+        lat: 1
       },
     },
   ]);

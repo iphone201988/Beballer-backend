@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { userType } from "../utils/enum";
 import Organizer from "../models/organizers.model";
-import teamsModel from "../models/teams.model";
+import ProGamesTeams from "../models/proGamesTeams.model";
 import {
   generateJwtToken,
   generateRandomString,
@@ -13,6 +13,8 @@ import Players from "../models/players.model";
 import { UserLoginType, subscribeType } from "../type/Api/userApi.type";
 import ErrorHandler from "../utils/ErrorHandler";
 import badgeModel from "../models/badge.model";
+
+
 const userLogin = TryCatch(async (req: Request<{}, {}, UserLoginType>, res: Response) => {
   const { id, deviceToken, deviceType, latitude, longitude, type } =
     req.body;
@@ -67,15 +69,21 @@ const getUserProfile = TryCatch(async (req: Request, res: Response) => {
   const badgeUri = await badgeModel.find({id:user.badge});
   let lat = 0;
   let long = 0;
-  //   let favoriteProTeam:any = {}
-  //  if(user.favoriteProTeam.ref.collectionName === 'progamesteams'){
-  //   console.log(user.favoriteProTeam)
-  //    const proTeam = await teamsModel.findOne({id:user.favoriteProTeam.ref.id}) ;
-  //    console.log('===========saddadsdfads',proTeam);
-  //    favoriteProTeam.id = proTeam?.id;
-  //    favoriteProTeam.name = proTeam?.name;
-  //    if(proTeam?.imageURL)favoriteProTeam.imageURL = proTeam?.imageURL
-  //  }
+     console.log('user.favoriteProTeam',user.favoriteProTeam);
+    let favoriteProTeam:any = null;
+   if(user.favoriteProTeam.id !== null){
+     const proTeam = await ProGamesTeams.findOne({id:user.favoriteProTeam.ref.id}) ;
+     if (proTeam) {
+      favoriteProTeam = {
+        _id: proTeam._id,
+        id: proTeam.id,
+        name: proTeam.name,
+      };
+      if (proTeam.imageURL) {
+        favoriteProTeam.imageURL = proTeam.imageURL;
+      }
+    }
+   }
   if(user.location.coordinates && user.location.coordinates.length > 0){
      lat = user.location.coordinates[1];
      long = user.location.coordinates[0];
@@ -89,7 +97,7 @@ const getUserProfile = TryCatch(async (req: Request, res: Response) => {
         badgeUri: badgeUri[0]?.image ? badgeUri[0]?.image : null,
         lat,
         long,
-        // favoriteProTeam
+        favoriteProTeam
       },
     },
   });

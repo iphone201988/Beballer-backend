@@ -269,9 +269,15 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     jti: { type: String },
     favoriteProTeam: {
          ref: {
-            collectionName: String,
-            id: String,
-        }
+            collectionName:{
+              type: String,
+              enum: ['progamesteams']
+            },
+            id: {
+              type: String,
+              default: null
+            },
+        },
     },
     position: {
       type: String,
@@ -284,6 +290,14 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     isProfileCompleted: {
       type: Boolean,
       default: false,
+    },
+    setProfilePopup: {
+      type: Boolean,
+      default: false,
+    },
+    setSettingsPopup: {
+      type: Boolean,
+      default: false
     }
   },
   { timestamps: true }

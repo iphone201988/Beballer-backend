@@ -23,6 +23,9 @@ const createPlayerProfileSchema = {
         recutersViewed: stringValidation("Recuters Viewed",false),
         playPositionId: Joi.number().optional(),
         city:stringValidation("City",false),
+        setProfilePopup:Joi.boolean().optional(),
+        setSettingsPopup:Joi.boolean().optional(),
+
     })
 }
 

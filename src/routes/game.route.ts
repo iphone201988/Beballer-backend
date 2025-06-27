@@ -8,4 +8,10 @@ gameRouter.get(
     authenticationMiddleware,
     gameControllers.getGames
 )
+
+gameRouter.post(
+    "/create-game",
+    authenticationMiddleware,
+    gameControllers.createGame
+)
 export default gameRouter

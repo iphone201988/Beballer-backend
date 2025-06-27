@@ -68,7 +68,9 @@ export interface PlayerModel {
     },
     position: string;
     playPositionId: number,
-    isProfileCompleted: boolean
+    isProfileCompleted: boolean,
+    setProfilePopup: boolean,
+    setSettingsPopup: boolean
 
 }
 

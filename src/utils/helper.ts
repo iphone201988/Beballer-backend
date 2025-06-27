@@ -78,6 +78,7 @@ export const getFileteredUser = (user: PlayerModel) => {
     profileDescription: undefined,
     geohash: undefined,
     rankCountry: undefined,
+    favoriteProTeam: undefined
 
   };
 };

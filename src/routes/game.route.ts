@@ -14,4 +14,9 @@ gameRouter.post(
     authenticationMiddleware,
     gameControllers.createGame
 )
+gameRouter.get(
+    "/get-games/:id",
+    authenticationMiddleware,
+    gameControllers.getGameById
+)
 export default gameRouter

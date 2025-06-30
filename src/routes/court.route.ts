@@ -19,5 +19,10 @@ courtRouter.get(
     authenticationMiddleware,
     courtController.getCourts
 );
+courtRouter.get(
+    "/get-courts/:id",
+    authenticationMiddleware,
+    courtController.getCourtById
+);
 
 export default courtRouter;

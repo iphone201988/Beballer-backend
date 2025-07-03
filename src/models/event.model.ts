@@ -126,6 +126,10 @@ const EventSchema = new mongoose.Schema({
             type: [Number],
         },
     },
+     eventPhotos: {
+        type: [{ type: String }],
+        default: [],
+    }
 },
 { timestamps: true }
 );

@@ -3,17 +3,19 @@ import { Request, Response } from "express";
 import Game from "../models/game.model";
 import mongoose from "mongoose";
 import { Types } from "aws-sdk/clients/customerprofiles";
+import Players from "../models/players.model";
+import { date } from "joi";
+import { mode } from "../utils/enum";
+import Fields from "../models/fields.model";
 
 
 export const createGame = TryCatch(async (req: Request, res: Response) => {
     const { mode, courtId, date, isAutoRefereeing, refereeId } = req.body;
     const { user, userType } = req
-
-
     const gameData: any = {
         id: new mongoose.Types.ObjectId().toString(),
         mode,
-        date: date ? new Date(date) : new Date(),
+        date: new Date(date),
         isAutoRefereeing: !!isAutoRefereeing,
         status: "scheduled",
         team1Players: [
@@ -36,68 +38,144 @@ export const createGame = TryCatch(async (req: Request, res: Response) => {
         },
     };
 
+    const referee = await Players.findOne({ id: refereeId });
+
+
     if (!isAutoRefereeing && refereeId) {
-        gameData.referees = [
-            {
+        gameData.referee = {
+            ref: {
+
+                collectionName: referee ? "players" : "organizers",
                 id: refereeId,
-                collectionName: userType === "player" ? "players" : "organizers",
+
             },
-        ];
+        };
         gameData.hasAcceptedInvitationReferee = false;
     }
 
     const newGame = new Game(gameData);
     const savedGame = await newGame.save();
 
-    return SUCCESS(res, 201, "Game created successfully", {
-        game: savedGame,
-    });
+    return SUCCESS(res, 201, "Game created successfully");
 });
 
 
 export const getGames = TryCatch(async (req: Request, res: Response) => {
-    const { id: userId } = req.user;
-    const getAll = req.query.getAll === "true";
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const { user, userType } = req;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const getAll = req.query.getAll === 'true' ? true : false;
     const skip = (page - 1) * limit;
+    const [lng, lat] = user.location.coordinates;
 
-    const projection = "id date mode status field.ref createdAt";
+    const games = await Fields.aggregate([
+        {
+            $geoNear: {
+                near: {
+                    type: "Point",
+                    coordinates: [lng, lat],
+                },
+                distanceField: "distance",
+                maxDistance: 20000,
+                spherical: true,
+            },
+        },
+        {
+            $lookup: {
+                from: "games",
+                let: { fieldId: "$id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$field.ref.id", "$$fieldId"] },
+                                    {
+                                        $or: getAll
+                                            ? [
+                                                { $eq: ["$visible", true] }
+                                            ]
+                                            : [
+                                                {
+                                                    $and: [
+                                                        { $eq: ["$organizer.ref.id", user.id] },
+                                                        {
+                                                            $eq: [
+                                                                "$organizer.ref.collectionName",
+                                                                userType === "player" ? "players" : "organizers"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    $in: [user.id, "$team1Players.id"]
+                                                },
+                                                {
+                                                    $in: [user.id, "$team2Players.id"]
+                                                }
+                                            ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                as: "games"
+            }
+        },
+        {
+            $unwind: "$games",
+        },
+        {
+            $replaceRoot: {
+                newRoot: {
+                    $mergeObjects: ["$games", { field: "$$ROOT" }],
+                },
+            },
+        },
+        {
+            $project: {
+                createdAt: 1,
+                date: 1,
+                mode: 1,
+                id: 1,
+                totalJoinedPlayers: {
+                    $concat: [
+                        {
+                            $toString: {
+                                $add: [
+                                    { $size: { $ifNull: ["$team1Players", []] } },
+                                    { $size: { $ifNull: ["$team2Players", []] } },
+                                ],
+                            },
+                        },
+                        "/",
+                        { $toString: "$mode" },
+                    ],
+                },
+                status: 1,
+                "field._id": 1,
+                "field.id": 1,
+                "field.name": 1,
+                "field.postalCode": 1,
+                "field.photos": 1,
+                "field.long": { $arrayElemAt: ["$field.location.coordinates", 0] },
+                "field.lat": { $arrayElemAt: ["$field.location.coordinates", 1] },
+            },
+        },
+        { $skip: skip },
+        { $limit: limit },
+        { $sort: { createdAt: -1 } },
+    ]);
 
-    let games;
-    let totalGames;
-    console.log(userId)
-    const query = {
-        $or: [
-            { visible: true },
-            { "organizer.ref.id": userId }
-        ]
-    };
-    if (getAll) {
-        games = await Game.find(query)
-            .select(projection)
-            .sort({ date: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        totalGames = await Game.countDocuments(query);
-    } else {
-        games = await Game.find({ "organizer.ref.id": userId })
-            .select(projection)
-            .sort({ date: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        totalGames = await Game.countDocuments({ "organizer.ref.id": userId });
-    }
-
-    return SUCCESS(res, 200, getAll ? "All games fetched" : "User's games fetched", {
-        games,
-        currentPage: page,
-        totalPages: Math.ceil(totalGames / limit),
-        totalGames,
+    return SUCCESS(res, 200, "Games fetched successfully", {
+        data: {
+            games
+        }
     });
+
 });
+
 
 
 
@@ -106,157 +184,110 @@ export const getGames = TryCatch(async (req: Request, res: Response) => {
 export const getGameById = TryCatch(async (req: Request, res: Response) => {
     const { id: userId } = req.user;
     const gameId = req.params.id;
-    console.log(gameId)
 
-    const gameArray = await Game.aggregate([
+    const game = await Game.aggregate([
         {
-            $match: { _id: new mongoose.Types.ObjectId(gameId) }
-        },
-        {
-            $addFields: {
-                homeTeam: {
-                    $first: {
-                        $filter: {
-                            input: "$team1Players",
-                            as: "p",
-                            cond: {
-                                $eq: ["$$p.collectionName", "players"]
-                            }
-                        }
-                    }
-                }
+            $match: {
+                id: gameId,
             }
         },
         {
             $lookup: {
                 from: "players",
-                let: { playerId: "$homeTeam.id" },
+                let: { organizerId: "$organizer.ref.id" },
                 pipeline: [
                     {
                         $match: {
                             $expr: {
-                                $eq: ["$id", "$$playerId"]
-                            }
-                        }
+                                $eq: ["$id", "$$organizerId"],
+                            },
+                        },
                     },
                     {
                         $project: {
-                            firstName: 1,
-                            lastName: 1,
-                            sector: 1,
-                            //   homeTeamName: "$lastName",
-                            //   homeTeamCountry: "$feedCountry"
-                        }
-                    }
+                            _id: 1,
+                            id: 1,
+                            username: 1
+                        },
+                    },
                 ],
-                as: "homeTeamInfo"
-            }
+                as: "organizer",
+            },
+        },
+        {
+            $unwind: {
+                path: "$organizer",
+                preserveNullAndEmptyArrays: true,
+            },
         },
 
-        {
-            $addFields: {
-                outsideTeam: {
-                    $first: {
-                        $filter: {
-                            input: "$team2Players",
-                            as: "p",
-                            cond: {
-                                $eq: ["$$p.collectionName", "players"]
-                            }
-                        }
-                    }
-                }
-            }
-        },
         {
             $lookup: {
                 from: "players",
-                let: { playerId: "$outsideTeam.id" },
+                let: { team1PlayerIds: "$team1Players.id" },
                 pipeline: [
                     {
                         $match: {
                             $expr: {
-                                $eq: ["$id", "$$playerId"]
-                            }
-                        }
+                                $in: ["$id", "$$team1PlayerIds"],
+                            },
+                        },
                     },
                     {
                         $project: {
-                            firstName: 1,
-                            lastName: 1,
-                            sector: 1,
-                            //   homeTeamName: "$lastName",
-                            //   homeTeamCountry: "$feedCountry"
-                        }
-                    }
+                            _id: 1,
+                            id: 1,
+                            username: 1,
+                            city: 1
+                        },
+                    },
                 ],
-                as: "outsideTeamInfo"
-            }
+                as: "team1Players",
+            },
         },
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         {
             $lookup: {
-                from: "fields",
-                let: { fieldId: "$field.ref.id" }, 
+                from: "players",
+                let: { team2PlayerIds: "$team2Players.id" },
                 pipeline: [
                     {
                         $match: {
                             $expr: {
-                                $eq: ["$id", "$$fieldId"] 
-                            }
-                        }
+                                $in: ["$id", "$$team2PlayerIds"],
+                            },
+                        },
                     },
                     {
                         $project: {
-                            hoopsCount: 1,
-                            netType: 1,
-                            boardType: 1,
-                            addressString: 1,
-                            name:1,
-                            king:1,
-                            description:1,
-                            floorType:1,
-                            address:1
-                          
-
-                        }
-                    }
+                            _id: 1,
+                            id: 1,
+                            username: 1
+                        },
+                    },
                 ],
-                as: "FieldInformation"
-            }
+                as: "team2Players",
+            },
         },
-        // {
-        //     $addFields: {
-        //         FieldInformation: { $first: "$FieldInformation" }
-        //     }
-        // }
+
+       {
+        $project:{
+            _id:1,
+            organizer:1,
+            team1Players:1,
+            team2Players:1
+        }
+       }
 
 
     ]);
 
-    const game = gameArray;
+    return SUCCESS(res, 200, "Game fetched successfully", {
+        data: {
+            game
+        }
+    });
 
-    if (!game) {
-        return res.status(404).json({ message: "Game not found" });
-    }
-
-    // const isPublic = game.visible === true;
-    // const isOwner = game.organizer?.ref?.id?.toString() === userId;
-
-    return SUCCESS(res, 200, "Game fetched successfully", { game });
 });
 
 

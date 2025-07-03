@@ -11,23 +11,25 @@ const organizerSchema = new mongoose.Schema<PlayerModel>(
     },
     username: {
       type: String,
-      unique: true, 
+      unique: true,
+      default: null
     },
     email: {
       type: String,
+      default: null
     },
     verified: {
       type: Boolean,
       default: false,
     },
-   subscriptions: [
+    subscriptions: [
       {
-         _id: false,
-        collectionName:{
+        _id: false,
+        collectionName: {
           type: String,
           enum: [userType.ORGANIZER, userType.PLAYER],
         },
-        id:String,
+        id: String,
       },
     ],
     reports: [{ type: String }],
@@ -66,9 +68,11 @@ const organizerSchema = new mongoose.Schema<PlayerModel>(
     },
     country: {
       type: String,
+      default: null
     },
     city: {
       type: String,
+      default: null
     },
     blockedUsers: [
       {
@@ -84,9 +88,10 @@ const organizerSchema = new mongoose.Schema<PlayerModel>(
     ],
     badge: {
       type: String,
+      default: null
     },
-    countryCode: { type: String, require: true },
-    phone: { type: String, require: true, unique: true },
+    countryCode: { type: String, require: true, default: null },
+    phone: { type: String, require: true, unique: true, default: null },
     deviceToken: { type: String, require: true },
     deviceType: {
       type: Number,

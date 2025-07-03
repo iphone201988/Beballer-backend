@@ -1,6 +1,8 @@
 import express from 'express'
 import { authenticationMiddleware } from "../middleware/auth.middleware";
 import gameControllers from '../controllers/game.controller';
+import gameSchema from '../schema/game.schema';
+import validate from '../middleware/validate.middleware';
 const gameRouter = express.Router()
 
 gameRouter.get(
@@ -12,10 +14,12 @@ gameRouter.get(
 gameRouter.post(
     "/create-game",
     authenticationMiddleware,
+    validate(gameSchema.createGameSchema),
     gameControllers.createGame
 )
+
 gameRouter.get(
-    "/get-games/:id",
+    "/get-game/:id",
     authenticationMiddleware,
     gameControllers.getGameById
 )

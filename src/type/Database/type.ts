@@ -80,6 +80,7 @@ export interface postModel {
     reports: string[];
     country: string;
     image: string;
+    video: string;
     game: {
         ref: {
             collectionName: string;
@@ -206,6 +207,13 @@ export interface gameModel {
     teamToValidate: number;
     createdAt: Date;
     updatedAt: Date;
+    referee: {
+        ref: {
+            collectionName: string;
+            id: string;
+        }
+    }
+
  
 }
 

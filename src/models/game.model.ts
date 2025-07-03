@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import { gameModel } from '../type/Database/type'
+import { mode } from '../utils/enum'
 
 const gameSchem = new mongoose.Schema<gameModel>({
     id: {
@@ -53,7 +54,8 @@ const gameSchem = new mongoose.Schema<gameModel>({
     },
     mode: {
         type: Number,
-        default: 1
+        enum: [mode.ONE_VS_ONE, mode.TWO_VS_TWO, mode.THREE_VS_THREE, mode.FOUR_VS_FOUR, mode.FIVE_VS_FIVE],
+        default: mode.ONE_VS_ONE
     },
     hasAcceptedInvitationTeam1: [
         {
@@ -73,6 +75,17 @@ const gameSchem = new mongoose.Schema<gameModel>({
         }
     },
     organizer: {
+        ref: {
+            collectionName: {
+                type: String,
+                default: null,
+            },
+            id: {
+                type: String,
+            },
+        }
+    },
+    referee: {
         ref: {
             collectionName: {
                 type: String,

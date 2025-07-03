@@ -56,7 +56,7 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
                             shareLink: 1,
                             // organizers: 1,
                             endDate: 1,
-                            spectators: 1,
+                            // spectators: 1,
                             isVisible: 1,
                             createdAt: 1,
                         }

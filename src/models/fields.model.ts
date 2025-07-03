@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { fieldsModel } from "../type/Database/type";
-import { courtAccessibility,courtBoardType,courtNetType,courtFloorType } from "../utils/enum";
+import { courtAccessibility, courtBoardType, courtNetType, courtFloorType } from "../utils/enum";
 
 const fieldsSchema = new mongoose.Schema<fieldsModel>({
     accessibility: {
@@ -22,7 +22,7 @@ const fieldsSchema = new mongoose.Schema<fieldsModel>({
     },
     boardType: {
         type: String,
-        enum: [courtBoardType.STEEL, courtBoardType.WOOD, courtBoardType.PLASTIC, courtBoardType.PLEXIGLAS ],
+        enum: [courtBoardType.STEEL, courtBoardType.WOOD, courtBoardType.PLASTIC, courtBoardType.PLEXIGLAS],
         default: "",
     },
     city: {
@@ -92,7 +92,7 @@ const fieldsSchema = new mongoose.Schema<fieldsModel>({
     },
     netType: {
         type: String,
-        enum: [courtNetType.STRING, courtNetType.CHAIN, courtNetType.PLASTIC , courtNetType.NO_NET],
+        enum: [courtNetType.STRING, courtNetType.CHAIN, courtNetType.PLASTIC, courtNetType.NO_NET],
         default: null
     },
     price: {
@@ -101,7 +101,10 @@ const fieldsSchema = new mongoose.Schema<fieldsModel>({
     region: {
         type: String,
     },
-    photos: [{ type: String }]
+    photos: {
+        type: [{ type: String }],
+        default: [],
+    }
 
 },
     { timestamps: true }

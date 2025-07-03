@@ -2,6 +2,9 @@ import multer from "multer";
 import multerS3 from "multer-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 import path from "path";
+import fs from "fs";
+
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export const s3 = new S3Client({
     region: process.env.AWS_REGION,
@@ -67,4 +70,30 @@ const uploads3 = multer({
     },
 });
 
+
 export default uploads3;
+
+
+// export async function uploadTestVideo() {
+//     try {
+//         const videoFilePath = "/Users/michaelmac/Desktop/Abhishek-thakur/beballer/Beballer-backend/src/middleware/0AH3Lhs9DLfRe4DHwKJj.mov";
+//         const fileContent = fs.readFileSync(videoFilePath);
+
+//         const s3Key = `Testvideo/0AH3Lhs9DLfRe4DHwKJj.mov`;
+
+//         const command = new PutObjectCommand({
+//             Bucket: bucketName,
+//             Key: s3Key,
+//             Body: fileContent,
+//             ContentType: "video/mp4",
+//         });
+
+//         await s3.send(command);
+
+//         console.log("Video uploaded successfully at:", s3Key);
+//     } catch (error) {
+//         console.error("Error uploading video:", error);
+//     }
+// }
+
+// uploadTestVideo();

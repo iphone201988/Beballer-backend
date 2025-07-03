@@ -1,9 +1,10 @@
 import { userType } from "../utils/enum";
 import { SUCCESS, TryCatch } from "../utils/helper";
-import { Request, Response } from "express";
+import { Request, Response,NextFunction } from "express";
 import Fields from "../models/fields.model";
 import { newCourt } from "../type/Api/courtApi.type";
 import mongoose from "mongoose";
+import ErrorHandler from "../utils/ErrorHandler";
 
 
 const newCourt = TryCatch(async (req: Request<{}, {}, newCourt>, res: Response) => {
@@ -117,7 +118,9 @@ const getCourts = TryCatch(async (req: Request, res: Response) => {
 
   console.log(courts);
   return SUCCESS(res, 200, "Courts fetched successfully", {
-    data: courts,
+    data: {
+      courts
+    },
     pagination: {
       currentPage: page,
       totalPages,
@@ -130,18 +133,30 @@ const getCourts = TryCatch(async (req: Request, res: Response) => {
 
 
 
-export const getCourtById = TryCatch(async (req: Request, res: Response) => {
+export const getCourtById = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
   const courtId = req.params.id;
+  const { user, userType } = req;
+  const long = user.location.coordinates[0];
+  const lat = user.location.coordinates[1];
 
   const courts = await Fields.aggregate([
     {
-      $match: { id: courtId }
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: [long, lat],
+        },
+        distanceField: "distance", 
+        spherical: true,
+        query: { id: courtId }, 
+      },
     },
     {
       $addFields: {
         long: { $arrayElemAt: ["$location.coordinates", 0] },
-        lat: { $arrayElemAt: ["$location.coordinates", 1] }
-      }
+        lat: { $arrayElemAt: ["$location.coordinates", 1] },
+        distance: { $divide: [{ $round: ["$distance", 2] }, 1000] }, 
+      },
     },
     {
       $lookup: {
@@ -150,27 +165,25 @@ export const getCourtById = TryCatch(async (req: Request, res: Response) => {
         pipeline: [
           {
             $match: {
-              $expr: {
-                $eq: ["$id", "$$contributorId"]
-              }
-            }
+              $expr: { $eq: ["$id", "$$contributorId"] },
+            },
           },
           {
             $project: {
               id: 1,
               firstName: 1,
               lastName: 1,
-              profileImage: 1
-            }
-          }
+              profileImage: 1,
+            },
+          },
         ],
-        as: "userInformation"
-      }
+        as: "userInformation",
+      },
     },
     {
       $addFields: {
-        userInformation: { $first: "$userInformation" }
-      }
+        userInformation: { $first: "$userInformation" },
+      },
     },
     {
       $project: {
@@ -189,18 +202,23 @@ export const getCourtById = TryCatch(async (req: Request, res: Response) => {
         netType: 1,
         floorType: 1,
         description: 1,
-        userInformation: 1
-      }
-    }
+        userInformation: 1,
+        distance: 1,
+      },
+    },
   ]);
 
   const court = courts[0];
 
   if (!court) {
-    return res.status(404).json({ success: false, message: "Court not found" });
+   return next(new ErrorHandler("Court not found", 400));
   }
 
-  return SUCCESS(res, 200, "Court fetched successfully", court);
+  return SUCCESS(res, 200, "Court fetched successfully", {
+    data: {
+      court
+    }
+  });
 });
 export default {
   newCourt,

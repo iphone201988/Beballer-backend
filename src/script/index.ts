@@ -182,10 +182,10 @@ const postImages = async () => {
     const posts = await Posts.find({ contentType: 'image' }).select('id image');
     console.log(`Total image posts: ${posts.length}`);
 
-    const extensions = ['.jpeg', '.jpg', '.png', '.gif', '']; // Added '' for no extension
+    const extensions = ['.jpeg', '.jpg', '.png', '.gif', ''];
     let count = 0;
 
-    const limit = pLimit(10); // Max 10 concurrent S3 checks
+    const limit = pLimit(10);
     const updateOps = [];
 
     const tasks = posts.map(post =>
@@ -201,8 +201,7 @@ const postImages = async () => {
               Key: key
             }).promise();
 
-            // Split the key to verify postId matches
-            const keyPostId = key.split('/')[1].split('.')[0]; // Get ID before any extension (or none)
+            const keyPostId = key.split('/')[1].split('.')[0];
             if (keyPostId === postId) {
               foundImage = `/${key}`;
               break;
@@ -226,7 +225,14 @@ const postImages = async () => {
           console.log(`Queued update for post ${postId}: ${foundImage}`);
           count++;
         } else if (!foundImage) {
-          console.log(`No image found for post ${postId}`);
+          updateOps.push({
+            updateOne: {
+              filter: { id: postId },
+              update: { $set: { image: null } }
+            }
+          });
+          console.log(`Queued update to null for post ${postId}`);
+          count++;
         }
       })
     );
@@ -248,12 +254,90 @@ const postImages = async () => {
 };
 
 
+const postVideos = async () => {
+  try {
+    const posts = await Posts.find({ contentType: 'video' }).select('id video');
+    console.log(`Total video posts: ${posts.length}`);
+
+    const extensions = ['.mov', '.mp4'];
+    let count = 0;
+
+    const limit = pLimit(10);
+    const updateOps = [];
+
+    const tasks = posts.map(post =>
+      limit(async () => {
+        const postId = post.id;
+        let foundVideo: string | null = null;
+
+        for (const ext of extensions) {
+          const key = `Post Videos/${postId}${ext}`;
+          try {
+            await s3.headObject({
+              Bucket: 'beballer-bucket',
+              Key: key,
+            }).promise();
+
+            foundVideo = `/${key}`;
+
+            console.log(`Found video for post ${postId}: ${foundVideo}`);
+            // break;
+          } catch (error) {
+            if (error.code !== 'NotFound') {
+              console.error(`Error checking ${key} for post ${postId}:`, error);
+            }
+          }
+        }
+
+        console.log(`Found video for post ${postId}: ${foundVideo || 'None'}`);
+
+        if (foundVideo && foundVideo !== post.video) {
+          updateOps.push({
+            updateOne: {
+              filter: { id: postId },
+              update: { $set: { video: foundVideo } }
+            }
+          });
+          console.log(`Queued update for post ${postId}: ${foundVideo}`);
+          count++;
+        } else if (!foundVideo && post.video) {
+          updateOps.push({
+            updateOne: {
+              filter: { id: postId },
+              update: { $set: { video: null } }
+            }
+          });
+          console.log(`Queued null update for post ${postId}`);
+          count++;
+        }
+      })
+    );
+
+    await Promise.all(tasks);
+
+    if (updateOps.length > 0) {
+      const result = await Posts.bulkWrite(updateOps);
+      console.log(`Updated ${result.modifiedCount} video posts.`);
+    } else {
+      console.log(`No video updates needed.`);
+    }
+
+    console.log(`Post videos update process completed. Total updates: ${count}`);
+  } catch (error) {
+    console.error('Error in postVideos:', error);
+    throw error;
+  }
+};
+
+
+
 const main = async () => {
     try {
     // await profileImageScript();
     // await updateFieldsPhotos();
+   await  postVideos();
     // await updateEventDates();
-    await postImages();
+    // await postImages();
     console.log('Script execution completed successfully');
   } catch (error) {
     console.error('Script execution failed:', error);

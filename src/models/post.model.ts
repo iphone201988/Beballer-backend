@@ -82,7 +82,9 @@ const postSchema = new mongoose.Schema<postModel>(
         },
         image: {
             type: String,
-            default: null,
+        },
+        video: {
+            type: String,
         },
     },
     { timestamps: true }

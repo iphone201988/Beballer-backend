@@ -20,7 +20,7 @@ courtRouter.get(
     courtController.getCourts
 );
 courtRouter.get(
-    "/get-courts/:id",
+    "/get-court/:id",
     authenticationMiddleware,
     courtController.getCourtById
 );

@@ -153,7 +153,11 @@ export interface fieldsModel {
     location: {
         type: "Point",
         coordinates: number[],
-    }
+    },
+    createdAt: Date,
+    updatedAt: Date,
+    isDeleted: boolean
+
 }
 
 export interface commentModel {
@@ -171,6 +175,7 @@ export interface commentModel {
     postId: string;
     createdAt: Date;
     updatedAt: Date;
+
 
 }
 

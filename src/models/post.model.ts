@@ -5,10 +5,11 @@ const postSchema = new mongoose.Schema<postModel>(
     {
         id: {
             type: String,
-            unique: true,
+            // unique: true,
         },
         date: {
             type: Date,
+            default: Date.now,
         },
         reports: [],
         country: {
@@ -93,7 +94,7 @@ const postSchema = new mongoose.Schema<postModel>(
 postSchema.index({ "publisher.ref.id": 1 });
 postSchema.index({ "publisher.ref.collectionName": 1, "publisher.ref.id": 1 });
 postSchema.index({ "game.ref.id": 1 });
-postSchema.index({ id: 1 });
+postSchema.index({ id: 1 }, { unique: true });
 postSchema.index({ "event.ref.id": 1 });
 postSchema.index({ "court.ref.id": 1 });
 postSchema.index({ date: -1 });

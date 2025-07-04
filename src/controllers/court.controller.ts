@@ -1,6 +1,6 @@
 import { userType } from "../utils/enum";
 import { SUCCESS, TryCatch } from "../utils/helper";
-import { Request, Response,NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import Fields from "../models/fields.model";
 import { newCourt } from "../type/Api/courtApi.type";
 import mongoose from "mongoose";
@@ -32,7 +32,7 @@ const newCourt = TryCatch(async (req: Request<{}, {}, newCourt>, res: Response) 
   const newFields = await Fields.create({
     id: new mongoose.Types.ObjectId().toString(),
     name,
-    address:addressString,
+    address: addressString,
     city,
     region,
     country,
@@ -85,6 +85,11 @@ const getCourts = TryCatch(async (req: Request, res: Response) => {
       },
     },
     {
+      $match: {
+        isDeleted: false
+      }
+    },
+    {
       $sort: {
         createdAt: -1,
       },
@@ -97,8 +102,8 @@ const getCourts = TryCatch(async (req: Request, res: Response) => {
     },
     {
       $addFields: {
-          long: { $arrayElemAt: ["$location.coordinates", 0] },
-          lat: { $arrayElemAt: ["$location.coordinates", 1] },
+        long: { $arrayElemAt: ["$location.coordinates", 0] },
+        lat: { $arrayElemAt: ["$location.coordinates", 1] },
       }
     },
     {
@@ -146,16 +151,21 @@ export const getCourtById = TryCatch(async (req: Request, res: Response, next: N
           type: "Point",
           coordinates: [long, lat],
         },
-        distanceField: "distance", 
+        distanceField: "distance",
         spherical: true,
-        query: { id: courtId }, 
+        query: { id: courtId },
       },
+    },
+    {
+      $match: {
+        isDeleted: false
+      }
     },
     {
       $addFields: {
         long: { $arrayElemAt: ["$location.coordinates", 0] },
         lat: { $arrayElemAt: ["$location.coordinates", 1] },
-        distance: { $divide: [{ $round: ["$distance", 2] }, 1000] }, 
+        distance: { $divide: [{ $round: ["$distance", 2] }, 1000] },
       },
     },
     {
@@ -211,7 +221,7 @@ export const getCourtById = TryCatch(async (req: Request, res: Response, next: N
   const court = courts[0];
 
   if (!court) {
-   return next(new ErrorHandler("Court not found", 400));
+    return next(new ErrorHandler("Court not found", 400));
   }
 
   return SUCCESS(res, 200, "Court fetched successfully", {

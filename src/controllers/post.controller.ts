@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import ErrorHandler from "../utils/ErrorHandler";
 import { getFilterPost } from "../utils/helper";
 import { date } from "joi";
+import { create } from "domain";
 
 
 const createPost = TryCatch(async (req: Request, res: Response , next: NextFunction) => {
@@ -18,7 +19,7 @@ const createPost = TryCatch(async (req: Request, res: Response , next: NextFunct
     const videoKey = req.s3UploadedKeys?.postVideo ? req.s3UploadedKeys.postVideo[0] : null;
     
     const newPost = await Posts.create({
-        id: "6866818356b31dd8c5a307ae",
+        id: new mongoose.Types.ObjectId().toString(),
         description,
         contentType,
         isFeed: true,
@@ -420,7 +421,9 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
                 shares: 0,
                 "publisherData.subscriptions": 0,
                 proGames: 0,
-                reports: 0
+                reports: 0,
+                createdAt: 0,
+                updatedAt: 0
 
             }
         }

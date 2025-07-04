@@ -110,6 +110,10 @@ const fieldsSchema = new mongoose.Schema<fieldsModel>({
             required: true,
         },
     },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
 
 },
     { timestamps: true }

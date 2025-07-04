@@ -9,6 +9,7 @@ import { mode } from "../utils/enum";
 import Fields from "../models/fields.model";
 import ErrorHandler from "../utils/ErrorHandler";
 import { constrainedMemory } from "process";
+import ChatGroup from "../models/chatGroup.model";
 
 
 export const createGame = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
@@ -79,6 +80,14 @@ export const createGame = TryCatch(async (req: Request, res: Response, next: Nex
 
     const newGame = new Game(gameData);
     const savedGame = await newGame.save();
+
+    const chatGroup = new ChatGroup({
+        gameId: savedGame._id,
+        members: [...team1Players, ...team2Players],
+        lastMessage: null,
+    });
+
+    await chatGroup.save();
 
     return SUCCESS(res, 201, "Game created successfully");
 });

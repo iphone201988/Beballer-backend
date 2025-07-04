@@ -74,16 +74,16 @@ const useSocket = (
             const newMessage = new Message({
                 chatGroupId: chatGroup._id,
                 senderId: player.id,
-                senderImage: player.profilePicture,
-                senderUsername: player.username,
+                senderImage: player.profilePicture || null,
+                senderUsername: player.username || null,
                 message
             });
             await newMessage.save();
 
             io.to(chatGroup.id).emit("receive_group_message", {
                 senderId: player.id,
-                senderImage: player.profilePicture,
-                senderUsername: player.username,
+                senderImage: player.profilePicture || null,
+                senderUsername: player.username || null,
                 message,
                 createdAt: newMessage.createdAt
             });

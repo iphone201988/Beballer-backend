@@ -23,4 +23,11 @@ gameRouter.get(
     authenticationMiddleware,
     gameControllers.getGameById
 )
+
+gameRouter.post(
+    "/add-player-to-game",
+    authenticationMiddleware,
+    validate(gameSchema.addPlayerToGameSchema),
+    gameControllers.addPlayerToGame
+)
 export default gameRouter

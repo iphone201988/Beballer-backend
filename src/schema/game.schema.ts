@@ -29,10 +29,19 @@ export const createGameSchema = {
       .label("Visible"),
     refereeId: Joi.string().label("Referee ID"),
     team1Players: Joi.array().required(),
-    team2Players: Joi.array()
+    team2Players: Joi.array().required(),
+  }),
+};
+
+export const addPlayerToGameSchema = {
+  body: Joi.object({
+    playerId: Joi.string().required(),
+    gameId: Joi.string().required(),
+    team: Joi.number().required()
   }),
 };
 
 export default {
-    createGameSchema
+    createGameSchema,
+    addPlayerToGameSchema
 }

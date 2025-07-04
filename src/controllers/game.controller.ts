@@ -1,5 +1,5 @@
 import { SUCCESS, TryCatch } from "../utils/helper";
-import { Request, Response,NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import Game from "../models/game.model";
 import mongoose from "mongoose";
 import { Types } from "aws-sdk/clients/customerprofiles";
@@ -12,9 +12,21 @@ import { constrainedMemory } from "process";
 import ChatGroup from "../models/chatGroup.model";
 
 
-export const createGame = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
+const createGame = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
     const { mode, courtId, date, isAutoRefereeing, refereeId, team1Players, team2Players } = req.body;
-    const { user, userType } = req
+    const { user, userType } = req;
+
+    if (!mode || !courtId || !date) {
+        return next(new ErrorHandler("Mode, courtId, and date are required", 400));
+    }
+    const maxPlayersPerTeam = mode;
+    if (team1Players?.length > maxPlayersPerTeam) {
+        return next(new ErrorHandler(`Team 1 can only have ${maxPlayersPerTeam} players for mode ${mode}`, 400));
+    }
+    if (team2Players?.length > maxPlayersPerTeam) {
+        return next(new ErrorHandler(`Team 2 can only have ${maxPlayersPerTeam} players for mode ${mode}`, 400));
+    }
+
     const gameData: any = {
         id: new mongoose.Types.ObjectId().toString(),
         mode,
@@ -33,46 +45,44 @@ export const createGame = TryCatch(async (req: Request, res: Response, next: Nex
                 collectionName: userType === "player" ? "players" : "organizers",
             },
         },
+        team1Players: [],
+        team2Players: [],
     };
-    gameData.team1Players = [];
-    gameData.team2Players = [];
 
-    if (team1Players && team1Players.length > 0) {
-        if(team1Players.length > mode) return next(new ErrorHandler(`You can only select ${mode} players for selected mode ${mode}`, 400));
-        team1Players.forEach(async (id: any) => {
-            const player = await Players.findOne({ id: id });
-            if(!player) return next(new ErrorHandler(`User not found with id ${id}` , 400));
+    if (Array.isArray(team1Players) && team1Players.length > 0) {
+        for (const id of team1Players) {
+            const player = await Players.findOne({ id });
+            if (!player) {
+                return next(new ErrorHandler(`User not found with id ${id}`, 400));
+            }
             gameData.team1Players.push({
                 collectionName: "players",
-                id: id,
-                accepted:id === user.id
-            })
-        })
+                id,
+                accepted: id === user.id,
+            });
+        }
     }
-    if (team2Players && team2Players.length > 0) {
-        if(team2Players.length > mode) return next(new ErrorHandler(`You can only select ${mode} players for selected mode ${mode}`, 400));
-        team2Players.forEach(async (id: any) => {
-            const player = await Players.findOne({ id: id });
-            if(!player) return next(new ErrorHandler(`User not found with id ${id}` , 400));
-            gameData.team2Players.push(
-                {
-                    collectionName: "players",
-                    id:id
-                }
-            )
-        })
+    if (Array.isArray(team2Players) && team2Players.length > 0) {
+        for (const id of team2Players) {
+            const player = await Players.findOne({ id });
+            if (!player) {
+                return next(new ErrorHandler(`User not found with id ${id}`, 400));
+            }
+            gameData.team2Players.push({
+                collectionName: "players",
+                id,
+            });
+        }
     }
-
-    const referee = await Players.findOne({ id: refereeId });
-
-
     if (!isAutoRefereeing && refereeId) {
+        const referee = await Players.findOne({ id: refereeId });
+        if (!referee) {
+            return next(new ErrorHandler(`Referee not found with id ${refereeId}`, 400));
+        }
         gameData.referee = {
             ref: {
-
-                collectionName: referee ? "players" : "organizers",
+                collectionName: "players",
                 id: refereeId,
-
             },
         };
         gameData.hasAcceptedInvitationReferee = false;
@@ -82,18 +92,20 @@ export const createGame = TryCatch(async (req: Request, res: Response, next: Nex
     const savedGame = await newGame.save();
 
     const chatGroup = new ChatGroup({
-        gameId: savedGame._id,
-        members: [...team1Players, ...team2Players],
+        gameId: savedGame.id,
+        members: [...(team1Players || []), ...(team2Players || [])],
         lastMessage: null,
     });
 
     await chatGroup.save();
 
-    return SUCCESS(res, 201, "Game created successfully");
+    return SUCCESS(res, 201, "Game created successfully", {
+        data: savedGame,
+    });
 });
 
 
-export const getGames = TryCatch(async (req: Request, res: Response) => {
+const getGames = TryCatch(async (req: Request, res: Response) => {
     const { user, userType } = req;
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
@@ -210,7 +222,7 @@ export const getGames = TryCatch(async (req: Request, res: Response) => {
 });
 
 
-export const getGameById = TryCatch(async (req: Request, res: Response) => {
+const getGameById = TryCatch(async (req: Request, res: Response) => {
     const { id: userId } = req.user;
     const gameId = req.params.id;
 
@@ -325,8 +337,8 @@ export const getGameById = TryCatch(async (req: Request, res: Response) => {
             },
         },
         {
-            $lookup:{
-                from:"fields",
+            $lookup: {
+                from: "fields",
                 let: { fieldId: "$field.ref.id" },
                 pipeline: [
                     {
@@ -338,25 +350,25 @@ export const getGameById = TryCatch(async (req: Request, res: Response) => {
                     },
                     {
                         $lookup: {
-                            from:"players",
+                            from: "players",
                             let: { contributorId: "$contributor.ref.id" },
                             pipeline: [
                                 {
                                     $match: {
                                         $expr: {
-                                            $eq: ["$id","$$contributorId"]
+                                            $eq: ["$id", "$$contributorId"]
                                         }
                                     }
                                 },
                                 {
                                     $project: {
-                                        _id:1,
-                                        id:1,
-                                        username:1
+                                        _id: 1,
+                                        id: 1,
+                                        username: 1
                                     }
                                 }
                             ],
-                            as:"contributor"
+                            as: "contributor"
                         }
                     },
                     {
@@ -391,8 +403,8 @@ export const getGameById = TryCatch(async (req: Request, res: Response) => {
             },
         },
         {
-            $lookup:{
-                from:"players",
+            $lookup: {
+                from: "players",
                 let: { refereeId: "$referee.ref.id" },
                 pipeline: [
                     {
@@ -449,11 +461,57 @@ export const getGameById = TryCatch(async (req: Request, res: Response) => {
 });
 
 
+const addPlayerToGame = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
+    const { gameId, playerId , team } = req.body;   //playerId = id , gameId = id
+    const { userId, userType } = req;
+
+    const game = await Game.findOne({ id: gameId });
+    if (!game) return next(new ErrorHandler("Game not found", 404));
+
+    if(team === 1){
+       if(game.team1Players.length >= game.mode) return next(new ErrorHandler(`You can only select ${game.mode} players for selected mode ${game.mode}`, 400));
+       const player = await Players.findOne({ id: playerId });
+       if (!player) return next(new ErrorHandler(`User not found with id ${playerId}`, 400));
+       game.team1Players.push(
+            {
+                collectionName: "players",
+                id: playerId
+            }
+        )
+        await game.save();
+       const chatGroup = await ChatGroup.findOne({ gameId: gameId });
+       if(!chatGroup) return next(new ErrorHandler("Chat group not found", 404));
+       chatGroup.members.push(playerId);
+       await chatGroup.save();
+       
+    }else{
+        if(game.team2Players.length >= game.mode) return next(new ErrorHandler(`You can only select ${game.mode} players for selected mode ${game.mode}`, 400));
+        const player = await Players.findOne({ id: playerId });
+        if (!player) return next(new ErrorHandler(`User not found with id ${playerId}`, 400));
+        game.team2Players.push(
+            {
+                collectionName: "players",
+                id: playerId
+            }
+        )
+        await game.save();
+        const chatGroup = await ChatGroup.findOne({ gameId: gameId });
+        if(!chatGroup) return next(new ErrorHandler("Chat group not found", 404));
+        chatGroup.members.push(playerId);
+        await chatGroup.save();
+    }
+
+    SUCCESS(res, 200, "Player added to game successfully");
+
+})
+
+
 const gameControllers =
 {
     getGames,
     createGame,
-    getGameById
+    getGameById,
+    addPlayerToGame
 }
 
 export default gameControllers

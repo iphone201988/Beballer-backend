@@ -5,6 +5,7 @@ const postSchema = new mongoose.Schema<postModel>(
     {
         id: {
             type: String,
+            unique: true,
         },
         date: {
             type: Date,

@@ -21,7 +21,13 @@ const uploads3 = multer({
     storage: multerS3({
         s3,
         bucket: bucketName,
-        contentType: multerS3.AUTO_CONTENT_TYPE,
+        contentType:(req, file, cb) => {
+            if (file.fieldname === "postVideo") {
+                cb(null, "video/mp4"); 
+            } else {
+                cb(null, file.mimetype);;
+            }
+        },
         key: function (req, file, cb) {
             let folderPath;
             if (file.fieldname === "profilePicture") {
@@ -35,6 +41,10 @@ const uploads3 = multer({
                 }
             } else if (file.fieldname === "photos") {
                 folderPath = "Fields";
+            } else if (file.fieldname === "postImage") {
+                folderPath = "Post Pictures";
+            } else if (file.fieldname === "postVideo") {
+                folderPath = "Post Videos";
             } else {
                 return cb(new Error(`Invalid fieldname: ${file.fieldname}`), null);
             }
@@ -44,7 +54,6 @@ const uploads3 = multer({
             const fileName = `${file.fieldname}-${uniqueSuffix}${extension}`;
             const s3Path = `${folderPath}/${fileName}`;
 
-            // Store s3Key in an array on req for multiple uploads
             if (!req.s3UploadedKeys) {
                 req.s3UploadedKeys = {};
             }
@@ -57,17 +66,31 @@ const uploads3 = multer({
         },
     }),
     fileFilter: function (req, file, cb) {
-        const isImage =
-            file.mimetype.includes("image") ||
-            file.mimetype.includes("octet-stream");
-        if (!isImage) {
-            return cb(
-                new Error(`Only image files are allowed for ${file.fieldname}`),
-                false
-            );
+        if (file.fieldname === "postImage" || file.fieldname === "profilePicture" || file.fieldname === "photos") {
+            const isImage =
+                file.mimetype.includes("image") ||
+                file.mimetype.includes("octet-stream");
+            if (!isImage) {
+                return cb(
+                    new Error(`Only image files are allowed for ${file.fieldname}`),
+                    false
+                );
+            }
+            cb(null, true);
+        } else if (file.fieldname === "postVideo") {
+            const isVideo = file.mimetype.includes("video");
+            if (!isVideo) {
+                return cb(
+                    new Error(`Only video files are allowed for ${file.fieldname}`),
+                    false
+                );
+            }
+            cb(null, true);
+        } else {
+            cb(new Error(`Invalid fieldname: ${file.fieldname}`), false);
         }
-        cb(null, true);
     },
+    //limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 

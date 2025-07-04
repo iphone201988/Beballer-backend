@@ -122,10 +122,7 @@ export interface fieldsModel {
     id: string,
     _id: string,
     accessibility: string,
-    address:{
-        type: "Point";
-        coordinates: number[];
-    },
+    address: string,
     addressString: string,
     boardType: string,
     city: string,
@@ -153,6 +150,10 @@ export interface fieldsModel {
     price: number,
     region: string,
     photos: string[],
+    location: {
+        type: "Point",
+        coordinates: number[],
+    }
 }
 
 export interface commentModel {

@@ -47,6 +47,10 @@ const gameSchem = new mongoose.Schema<gameModel>({
                 enum: ['organizers', 'players'],
             },
             id: String,
+            accepted: {
+                type: Boolean,
+                default: false
+            }
         },
     ],
     type: {
@@ -108,6 +112,10 @@ const gameSchem = new mongoose.Schema<gameModel>({
                 enum: ['organizers', 'players'],
             },
             id: String,
+            accepted: {
+                type: Boolean,
+                default: false
+            }
         },
     ],
     hasAcceptedInvitationTeam2: [

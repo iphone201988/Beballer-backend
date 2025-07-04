@@ -32,7 +32,7 @@ const newCourt = TryCatch(async (req: Request<{}, {}, newCourt>, res: Response) 
   const newFields = await Fields.create({
     id: new mongoose.Types.ObjectId().toString(),
     name,
-    addressString,
+    address:addressString,
     city,
     region,
     country,
@@ -52,7 +52,7 @@ const newCourt = TryCatch(async (req: Request<{}, {}, newCourt>, res: Response) 
       },
     },
     ...(lat && long && {
-      address: {
+      location: {
         type: "Point",
         coordinates: [long, lat],
       },

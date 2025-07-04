@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response,NextFunction } from "express";
 import { SUCCESS, TryCatch } from "../utils/helper";
 import Posts from "../models/post.model";
 import { likePost, commentOnPost } from "../type/Api/postApi.type";
@@ -7,6 +7,35 @@ import mongoose from "mongoose";
 import ErrorHandler from "../utils/ErrorHandler";
 import { getFilterPost } from "../utils/helper";
 import { date } from "joi";
+
+
+const createPost = TryCatch(async (req: Request, res: Response , next: NextFunction) => {
+    const { user, userType } = req;
+    const { contentType ,description } = req.body;
+    const collectionName = userType === 'player' ? 'plaeyrs' : 'organizers';
+
+    const imageKey = req.s3UploadedKeys?.postImage ? req.s3UploadedKeys.postImage[0] : null;
+    const videoKey = req.s3UploadedKeys?.postVideo ? req.s3UploadedKeys.postVideo[0] : null;
+    
+    const newPost = await Posts.create({
+        id: "6866818356b31dd8c5a307ae",
+        description,
+        contentType,
+        isFeed: true,
+        feedCountry: user.countryCode || 'FR',    
+        image: imageKey,
+        video: videoKey,
+        publisher: {
+            ref: {
+                collectionName,
+                id: user.id
+            }
+        }
+    });
+
+    return SUCCESS(res, 200, "Post created successfully");
+});
+
 
 
 const getPosts = TryCatch(async (req: Request, res: Response) => {
@@ -19,6 +48,11 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
         { $sort: { date: -1 } },
         { $skip: skip },
         { $limit: limit },
+        {
+            $match: {
+                isFeed: true
+            }
+        },
         {
             $lookup: {
                 from: "events",
@@ -76,7 +110,7 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
                 localField: "game.ref.id",
                 foreignField: "id",
                 as: "game",
-                 pipeline: [
+                pipeline: [
                     {
                         $lookup: {
                             from: "fields",
@@ -838,7 +872,8 @@ const postController = {
     getPosts,
     likePost,
     commentOnpost,
-    likeComment
+    likeComment,
+    createPost
 }
 
 export default postController

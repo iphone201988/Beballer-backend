@@ -28,6 +28,8 @@ export const createGameSchema = {
       .default(true)
       .label("Visible"),
     refereeId: Joi.string().label("Referee ID"),
+    team1Players: Joi.array().required(),
+    team2Players: Joi.array()
   }),
 };
 

@@ -9,13 +9,7 @@ const fieldsSchema = new mongoose.Schema<fieldsModel>({
         default: courtAccessibility.AVAILABLE_TO_EVERYONE
     },
     address: {
-        type: {
-            type: String,
-            enum: ["Point"],
-        },
-        coordinates: {
-            type: [Number],
-        },
+       type:String
     },
     addressString: {
         type: String,
@@ -104,7 +98,18 @@ const fieldsSchema = new mongoose.Schema<fieldsModel>({
     photos: {
         type: [{ type: String }],
         default: [],
-    }
+    },
+    location: {
+        type: {
+            type: String,
+            enum: ["Point"],
+            required: true,
+        },
+        coordinates: {
+            type: [Number],
+            required: true,
+        },
+    },
 
 },
     { timestamps: true }

@@ -3,7 +3,20 @@ import postController from "../controllers/post.controller";
 import { authenticationMiddleware } from "../middleware/auth.middleware";
 import postSchema  from "../schema/post.schema";
 import validate from "../middleware/validate.middleware";
+import uploads3 from "../middleware/multers3.middleware";
 const postRouter = express.Router();
+
+
+postRouter.post(
+    "/create-post",
+    authenticationMiddleware,
+    uploads3.fields([
+        { name: "postImage", maxCount: 1 }, 
+        { name: "postVideo", maxCount: 1 }  
+    ]),
+    // validate(postSchema.createPostSchema),
+    postController.createPost
+);
 
 postRouter.get("/get-posts", authenticationMiddleware, postController.getPosts);
 

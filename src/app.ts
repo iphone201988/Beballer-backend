@@ -6,6 +6,7 @@ import router from "./routes/route";
 import updateEventDates from "./script/createdAt";
 import updateContentTypeBulk from "./script/updatePostContenttype";
 import main from "./script";
+import updatePlayerAcceptance from "./script/updateGamesStatus";
 const app = express();
 
 app.use(express.json());
@@ -15,6 +16,7 @@ app.use(cors());
 // updateEventDates();
 // main();
 // updateContentTypeBulk();
+// updatePlayerAcceptance();
 
 app.use("/api/v1", router);
 

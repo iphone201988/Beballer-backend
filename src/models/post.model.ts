@@ -54,7 +54,7 @@ const postSchema = new mongoose.Schema<postModel>(
                 },
             }
         },
-        court : {
+        court: {
             ref: {
                 collectionName: {
                     type: String,
@@ -78,9 +78,9 @@ const postSchema = new mongoose.Schema<postModel>(
             type: Number,
             default: 0,
         },
-        contentType:{
+        contentType: {
             type: String,
-            default:"textOnly"
+            default: "textOnly"
         },
         image: {
             type: String,
@@ -88,7 +88,16 @@ const postSchema = new mongoose.Schema<postModel>(
         video: {
             type: String,
         },
+        postContentHeight: {
+            type:String,
+            default:null
+        },
+        postContentWidth: {
+            type:String,
+            default:null
+        }
     },
+
     { timestamps: true }
 );
 postSchema.index({ "publisher.ref.id": 1 });

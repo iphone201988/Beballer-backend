@@ -14,7 +14,7 @@ postRouter.post(
         { name: "postImage", maxCount: 1 }, 
         { name: "postVideo", maxCount: 1 }  
     ]),
-    // validate(postSchema.createPostSchema),
+    validate(postSchema.createPostSchema),
     postController.createPost
 );
 
@@ -37,4 +37,15 @@ postRouter.post(
     authenticationMiddleware,
     validate(postSchema.postCommentQuerySchema),
     postController.likeComment);
+
+postRouter.get(
+    "/get-post/:id",
+    authenticationMiddleware,
+    postController.getPostById);
+
+postRouter.get(
+    "/get-post-comments/:id",
+    authenticationMiddleware,
+    postController.getPostCommentsByPostId);
+    
 export default postRouter;

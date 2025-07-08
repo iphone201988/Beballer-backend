@@ -134,10 +134,6 @@ const getCourts = TryCatch(async (req: Request, res: Response) => {
 });
 
 
-
-
-
-
 export const getCourtById = TryCatch(async (req: Request, res: Response, next: NextFunction) => {
   const courtId = req.params.id;
   const { user, userType } = req;

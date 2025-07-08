@@ -25,10 +25,21 @@ const postCommentQuerySchema  = {
   })
 }
 
+
+const createPostSchema = {
+    body: Joi.object({
+        contentType: stringValidation("contentType"),
+        description: stringValidation("description"),
+        postContentWidth: stringValidation("postContentWidth",false),
+        postContentHeight: stringValidation("postContentHeight",false)
+    })
+}
+
 const postSchema = {
     postQuerySchema,
     postParamsSchema,
     commentOnPostSchema,
-    postCommentQuerySchema
+    postCommentQuerySchema,
+    createPostSchema
 }
 export default postSchema

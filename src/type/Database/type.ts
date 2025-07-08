@@ -116,6 +116,8 @@ export interface postModel {
         }
     }
     contentType: string;
+    postContentHeight: string;
+    postContentWidth: string
 }
 
 export interface fieldsModel {

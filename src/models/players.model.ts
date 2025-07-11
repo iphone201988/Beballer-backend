@@ -298,7 +298,12 @@ const playerSchema = new mongoose.Schema<PlayerModel>(
     setSettingsPopup: {
       type: Boolean,
       default: false
+    },
+    hasOrganizerAccount:{
+      type: Boolean,
+      default: false
     }
+
   },
   { timestamps: true }
 );

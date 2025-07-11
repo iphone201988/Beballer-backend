@@ -47,5 +47,11 @@ postRouter.get(
     "/get-post-comments/:id",
     authenticationMiddleware,
     postController.getPostCommentsByPostId);
+
+
+postRouter.get(
+    "/get-post-by-puplisher-id",
+    authenticationMiddleware,
+    postController.getPostByBuplisherId);
     
 export default postRouter;

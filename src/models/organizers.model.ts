@@ -98,7 +98,12 @@ const organizerSchema = new mongoose.Schema<PlayerModel>(
       enum: [deviceType.IOS, deviceType.ANDROID],
       require: true,
     },
+    profilePicture: {
+      type: String,
+      default: null
+    },
     jti: { type: String },
+    hasPlayerAccount: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

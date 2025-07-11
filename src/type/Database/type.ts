@@ -70,7 +70,10 @@ export interface PlayerModel {
     playPositionId: number,
     isProfileCompleted: boolean,
     setProfilePopup: boolean,
-    setSettingsPopup: boolean
+    setSettingsPopup: boolean,
+    organisationPhoto: string,
+    hasOrganizerAccount: boolean,
+    hasPlayerAccount: boolean
 
 }
 

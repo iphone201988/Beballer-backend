@@ -1,6 +1,6 @@
 import playerController from "../controllers/player.controller";
 import express from "express";
-import upload from "../middleware/multer.middleware";
+// import upload from "../middleware/multer.middleware";
 import { authenticationMiddleware } from "../middleware/auth.middleware";
 import uploads3 from "../middleware/multers3.middleware";
 import playerSchema from "../schema/player.schema";

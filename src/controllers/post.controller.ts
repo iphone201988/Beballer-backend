@@ -439,7 +439,10 @@ const getPosts = TryCatch(async (req: Request, res: Response) => {
                             input: "$likes",
                             as: "like",
                             cond: {
-                                $eq: ["$$like.id", user.id]
+                                $and: [
+                                    { $eq: ["$$like.id", user.id] },
+                                    { $eq: ["$$like.collectionName", userType === 'player' ? 'players' : 'organizers'] }
+                                ]
                             }
                         }
                     }
@@ -532,27 +535,35 @@ const commentOnpost = TryCatch(async (req: Request<{}, {}, commentOnPost>, res: 
 const likeComment = TryCatch(async (req: Request, res: Response) => {
     const { commentId } = req.query;
     const { user, userType } = req;
+
     const comment: any = await Comments.findById(commentId);
-    console.log('===================asjkasbkjhnijkoasjkjkl', comment);
     if (!comment) {
         return next(new ErrorHandler("Comment not found", 400));
     }
+
     const collectionName = userType === 'player' ? 'players' : 'organizers';
 
-    let like = true;
-    if (comment.likes.find(like => like.id === user.id && like.collectionName === collectionName)) {
-        like = false;
-        comment.likes = comment.likes.filter(like => !(like.id === user.id && like.collectionName === collectionName));
-    } else {
-        comment.likes.push({
-            collectionName,
-            id: user.id
-        });
+    // Count user's existing likes on the comment
+    const userLikesCount = comment.likes.filter(
+        (like: any) => like.id === user.id && like.collectionName === collectionName
+    ).length;
+
+    // Limit to 3 likes per user
+    if (userLikesCount >= 3) {
+        return SUCCESS(res, 200, "Already liked 3 times");
     }
+
+    // Add new like
+    comment.likes.push({
+        collectionName,
+        id: user.id
+    });
+
     await comment.save();
 
-    return SUCCESS(res, 200, `${like ? 'liked' : 'unliked'} successfully`);
+    return SUCCESS(res, 200, `Liked successfully (${userLikesCount + 1}/3)`);
 });
+
 
 const getPostById = TryCatch(async (req: Request, res: Response) => {
     const postId = req.params.id;
@@ -964,15 +975,57 @@ const getPostById = TryCatch(async (req: Request, res: Response) => {
 })
 
 
-const getPostCommentsByPostId = async (req: Request, res: Response) => {
+const getPostCommentsByPostId = TryCatch(async (req: Request, res: Response) => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     const postId = req.params.id;
+
+    const { user, userType } = req;
+    const collectionName = userType === 'player' ? 'players' : 'organizers';
+
     const comments = await Comments.aggregate([
         {
-            $match: {
-                postId: postId
-
+            $match: { postId }
+        },
+        {
+            $sort: { createdAt: -1 }
+        },
+        {
+            $skip: skip
+        },
+        {
+            $limit: limit
+        },
+        {
+            $addFields: {
+                publisherCollection: "$publisher.ref.collectionName"
             }
-
+        },
+        {
+            $lookup: {
+                from: "organizers",
+                let: { pubId: "$publisher.ref.id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: { $eq: ["$id", "$$pubId"] }
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 1,
+                            id: 1,
+                            username: 1,
+                            profilePicture: 1,
+                            firstName: 1,
+                            lastName: 1,
+                            verified: 1
+                        }
+                    }
+                ],
+                as: "publisherOrganizer"
+            }
         },
         {
             $lookup: {
@@ -990,6 +1043,9 @@ const getPostCommentsByPostId = async (req: Request, res: Response) => {
                             id: 1,
                             username: 1,
                             profilePicture: 1,
+                            firstName: 1,
+                            lastName: 1,
+                            verified: 1
                         }
                     }
                 ],
@@ -999,33 +1055,477 @@ const getPostCommentsByPostId = async (req: Request, res: Response) => {
         {
             $addFields: {
                 publisherData: {
-                    $arrayElemAt: ["$publisherPlayer", 0]
+                    $cond: [
+                        { $eq: ["$publisherCollection", "organizers"] },
+                        { $arrayElemAt: ["$publisherOrganizer", 0] },
+                        { $arrayElemAt: ["$publisherPlayer", 0] }
+                    ]
+                },
+                likeCount: { $size: "$likes" },
+                currentUserLikeCount: {
+                    $size: {
+                        $filter: {
+                            input: "$likes",
+                            as: "like",
+                            cond: {
+                                $and: [
+                                    { $eq: ["$$like.id", user.id] },
+                                    { $eq: ["$$like.collectionName", collectionName] }
+                                ]
+                            }
+                        }
+                    }
                 }
             }
         },
         {
-            $addFields: {
-                likeCount: { $size: "$likes" }
-            }
-        },
-        {
             $project: {
+                publisherOrganizer: 0,
                 publisherPlayer: 0,
                 publisher: 0,
-                createdAt: 0,
+                publisherCollection: 0,
                 updatedAt: 0,
                 likes: 0,
                 __v: 0
             }
         }
-    ])
+    ]);
 
-    return SUCCESS(res, 200, "Comments found", {
-        data: {
-            comments
+    const count = await Comments.countDocuments({ postId });
+    const totalPages = Math.ceil(count / limit);
+
+    return SUCCESS(res, 200, "Comments found", { 
+        data: comments, 
+        pagination: {
+            currentPage: page,
+            totalPages
+        } 
+    });
+});
+
+
+
+const getPostByBuplisherId = TryCatch(async (req: Request, res: Response) => {
+    const page = Number(req.query.page) || 1;
+    const isOnlySubscribed = req.query.isOnlySubscribed === 'true' ? true : false;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const { user, userType } = req;
+    const collectionName = userType === 'player' ? 'players' : 'organizers';
+    const posts = await Posts.aggregate([
+        { $sort: { date: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+            $match: {
+                isFeed: true
+            }
+        },
+        {
+            $lookup: {
+                from: "events",
+                localField: "event.ref.id",
+                foreignField: "id",
+                as: "event",
+                pipeline: [
+                    {
+                        $project: {
+                            formats: 1,
+                            hasCategories: 1,
+                            type: 1,
+                            geohash: 1,
+                            isVisibleToPublic: 1,
+                            paymentStatus: 1,
+                            address: 1,
+                            coordinates: {
+                                $cond: [
+                                    { $eq: ["$location", null] },
+                                    null,
+                                    "$location.coordinates"
+                                ]
+                            },
+                            hasSponsors: 1,
+                            discountCode: 1,
+                            name: 1,
+                            referees: 1,
+                            startDate: 1,
+                            refereesCode: 1,
+                            organizersCode: 1,
+                            spectatorsCode: 1,
+                            country: 1,
+                            city: 1,
+                            region: 1,
+                            shareLink: 1,
+                            // organizers: 1,
+                            endDate: 1,
+                            // spectators: 1,
+                            isVisible: 1,
+                            createdAt: 1,
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: {
+                path: "$event",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: "games",
+                localField: "game.ref.id",
+                foreignField: "id",
+                as: "game",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "fields",
+                            localField: "field.ref.id",
+                            foreignField: "id",
+                            as: "fieldData"
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: "$fieldData",
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $project: {
+                            createdAt: 1,
+                            id: 1,
+                            type: 1,
+                            status: 1,
+                            startDate: 1,
+                            date: 1,
+                            field: {
+                                $cond: [
+                                    { $eq: ["$fieldData", null] },
+                                    null,
+                                    {
+                                        id: "$fieldData.id",
+                                        _id: "$fieldData._id",
+                                        name: "$fieldData.name",
+                                        country: "$fieldData.country",
+                                        city: "$fieldData.city",
+                                        region: "$fieldData.region",
+                                        photos: "$fieldData.photos",
+                                        postalCode: "$fieldData.postalCode",
+                                    }
+                                ]
+                            },
+                            team1Players: 1,
+                            team2Players: 1,
+                            referees: 1,
+                            organizer: 1,
+                            hasAcceptedInvitationTeam2: 1,
+                            hasAcceptedInvitationTeam1: 1,
+                            hasAcceptedInvitationReferee: 1,
+                            mode: 1,
+                            isAutoRefereeing: 1,
+                            visible: 1,
+                            teamToValidate: 1,
+                            scoreTeam1: 1,
+                            scoreTeam2: 1,
+                            team1ScoreTeam1: 1,
+                            team1ScoreTeam2: 1,
+                            team2ScoreTeam1: 1,
+                            team2ScoreTeam2: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: {
+                path: "$game",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: "comments",
+                localField: "id",
+                foreignField: "postId",
+                as: "comments"
+            }
+        },
+        {
+            $lookup: {
+                from: "fields",
+                let: { courtId: "$court.ref.id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: { $eq: ["$id", "$$courtId"] }
+                        }
+                    },
+                    {
+                        $project: {
+                            geohash: 1,
+                            coordinates: {
+                                $cond: [
+                                    { $eq: ["$location", null] },
+                                    null,
+                                    "$location.coordinates"
+                                ]
+                            },
+                            name: 1,
+                            country: 1,
+                            city: 1,
+                            region: 1,
+                            shareLink: 1,
+                            id: 1,
+                            photos: 1,
+                            postalCode: 1,
+                            addressString: 1,
+                            createdAt: 1,
+                            description: 1,
+                            accessibility: 1,
+                            hasWaterPoint: 1,
+                            isWomanFriendly: 1,
+                            areDimensionsStandard: 1,
+                            hoopsCount: 1,
+                            boardType: 1,
+                            floorType: 1,
+                            netType: 1,
+                            level: 1,
+                            grade: 1
+                        }
+                    }
+                ],
+                as: "court"
+            }
+        },
+        {
+            $unwind: {
+                path: "$court",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $addFields: {
+                publisherCollection: "$publisher.ref.collectionName"
+            }
+        },
+        {
+            $addFields: {
+                likesCount: { $size: "$likes" }
+            }
+        },
+        {
+            $addFields: {
+                commentCount: { $size: "$comments" }
+            }
+        },
+        {
+            $lookup: {
+                from: "organizers",
+                let: { pubId: "$publisher.ref.id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: { $eq: ["$id", "$$pubId"] }
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 1,
+                            id: 1,
+                            username: 1,
+                            firstName: 1,
+                            lastName: 1,
+                            coordinates: {
+                                $cond: [
+                                    { $eq: ["$location", null] },
+                                    null,
+                                    "$location.coordinates"
+                                ]
+                            },
+                            city: 1,
+                            country: 1,
+                            profilePicture: 1,
+                            verified: 1,
+                            subscriptions: 1
+                        }
+                    }
+                ],
+                as: "publisherOrganizer"
+            }
+        },
+        {
+            $lookup: {
+                from: "players",
+                let: { pubId: "$publisher.ref.id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: { $eq: ["$id", "$$pubId"] }
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 1,
+                            id: 1,
+                            username: 1,
+                            firstName: 1,
+                            lastName: 1,
+                            coordinates: {
+                                $cond: [
+                                    { $eq: ["$location", null] },
+                                    null,
+                                    "$location.coordinates"
+                                ]
+                            },
+                            city: 1,
+                            country: 1,
+                            profilePicture: 1,
+                            verified: 1,
+                            subscriptions: 1
+                        }
+                    }
+                ],
+                as: "publisherPlayer"
+            }
+        },
+        {
+            $addFields: {
+                publisherData: {
+                    $cond: [
+                        { $eq: ["$publisherCollection", "organizers"] },
+                        { $arrayElemAt: ["$publisherOrganizer", 0] },
+                        { $arrayElemAt: ["$publisherPlayer", 0] }
+                    ]
+                }
+            }
+        },
+        {
+            $addFields: {
+                isSubscribed: {
+                    $in: [
+                        {
+                            collectionName: userType === 'player' ? 'players' : 'organizers',
+                            id: user.id
+                        },
+                        { $ifNull: ["$publisherData.subscriptions", []] }
+                    ]
+                }
+            }
+        },
+        {
+            $match: {
+                $expr: {
+                    $and: [
+                        { $eq: ["$publisherData.id", user.id] },
+                        { $eq: ["$publisherCollection", userType === 'player' ? 'players' : 'organizers'] }
+                    ]
+                }
+            }
+        },
+
+        {
+            $addFields: {
+                isLikedByCurrentUser: {
+                    $in: [
+                        {
+                            collectionName: userType === 'player' ? 'players' : 'organizers',
+                            id: user.id
+                        },
+                        { $ifNull: ["$likes", []] }
+                    ]
+                }
+            }
+        },
+        {
+            $addFields: {
+                isSharedByCurrentUser: {
+                    $in: [
+                        {
+                            collectionName: userType === 'player' ? 'players' : 'organizers',
+                            id: user.id
+                        },
+                        { $ifNull: ["$shares", []] }
+                    ]
+                }
+            }
+        },
+        {
+            $addFields: {
+                isCommentedByCurrentUser: {
+
+                    $in: [
+                        {
+                            collectionName: userType === 'player' ? 'players' : 'organizers',
+                            id: user.id
+                        },
+                        {
+                            $ifNull: [
+                                {
+                                    $map: {
+                                        input: "$comments",
+                                        as: "comment",
+                                        in: "$$comment.publisher.ref"
+                                    }
+                                },
+                                []
+                            ]
+                        }
+                    ]
+
+                }
+            }
+        },
+        {
+            $addFields: {
+                currentUserLikeCount: {
+                    $size: {
+                        $filter: {
+                            input: "$likes",
+                            as: "like",
+                            cond: {
+                                $and: [
+                                    { $eq: ["$$like.id", user.id] },
+                                    { $eq: ["$$like.collectionName", userType === 'player' ? 'players' : 'organizers'] }
+                                ]
+                            }
+                        }
+                    }
+
+                }
+            }
+        },
+        {
+            $project: {
+                publisherOrganizer: 0,
+                publisherPlayer: 0,
+                publisher: 0,
+                publisherCollection: 0,
+                likes: 0,
+                comments: 0,
+                shares: 0,
+                "publisherData.subscriptions": 0,
+                proGames: 0,
+                reports: 0,
+                createdAt: 0,
+                updatedAt: 0
+
+            }
         }
-    })
-}
+    ]);
+    const totalPosts = await Posts.estimatedDocumentCount();
+    const totalPages = Math.ceil(totalPosts / limit);
+
+    return SUCCESS(res, 200, "Posts fetched successfully", {
+        data: posts,
+        pagination: {
+            currentPage: page,
+            totalPages
+        }
+    });
+});
 
 const postController = {
     getPosts,
@@ -1034,7 +1534,8 @@ const postController = {
     likeComment,
     createPost,
     getPostById,
-    getPostCommentsByPostId
+    getPostCommentsByPostId,
+    getPostByBuplisherId
 }
 
 
